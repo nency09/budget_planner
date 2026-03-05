@@ -1,0 +1,200 @@
+﻿eUtil.java:106)
+[        ] 	at org.gradl
+e.api.internal.project.D
+efaultProject.dependenci
+es(DefaultProject.java:1
+305)
+[        ] 	at java.base
+/jdk.internal.reflect.Di
+rectMethodHandleAccessor
+.invoke(Unknown Source)
+[        ] 	at java.base
+/java.lang.reflect.Metho
+d.invoke(Unknown Source)
+[        ] 	at org.codeh
+aus.groovy.reflection.Ca
+chedMethod.invoke(Cached
+Method.java:107)
+[        ] 	at groovy.la
+ng.MetaMethod.doMethodIn
+voke(MetaMethod.java:323
+)
+[        ] 	at org.gradl
+e.internal.metaobject.Be
+anDynamicObject$MetaClas
+sAdapter.invokeMethod(Be
+anDynamicObject.java:541
+)
+[        ] 	at org.gradl
+e.internal.metaobject.Be
+anDynamicObject.tryInvok
+eMethod(BeanDynamicObjec
+t.java:218)
+[        ] 	at org.gradl
+e.internal.metaobject.Co
+mpositeDynamicObject.try
+InvokeMethod(CompositeDy
+namicObject.java:98)
+[        ] 	at org.gradl
+e.internal.extensibility
+.MixInClosurePropertiesA
+sMethodsDynamicObject.tr
+yInvokeMethod(MixInClosu
+rePropertiesAsMethodsDyn
+amicObject.java:36)
+[        ] 	at org.gradl
+e.groovy.scripts.BasicSc
+ript$ScriptDynamicObject
+.tryInvokeMethod(BasicSc
+ript.java:138)
+[        ] 	at org.gradl
+e.internal.metaobject.Ab
+stractDynamicObject.invo
+keMethod(AbstractDynamic
+Object.java:163)
+[        ] 	at org.gradl
+e.api.internal.project.D
+efaultDynamicLookupRouti
+ne.invokeMethod(DefaultD
+ynamicLookupRoutine.java
+:58)
+[        ] 	at org.gradl
+e.groovy.scripts.BasicSc
+ript.invokeMethod(BasicS
+cript.java:87)
+[        ] 	at org.codeh
+aus.groovy.runtime.calls
+ite.PogoMetaClassSite.ca
+llCurrent(PogoMetaClassS
+ite.java:68)
+[        ] 	at org.codeh
+aus.groovy.runtime.calls
+ite.AbstractCallSite.cal
+lCurrent(AbstractCallSit
+e.java:185)
+[        ] 	at build_1nm
+a64amdam6tcfhrlla6ymgz.r
+un(D:\Projects\budget_pl
+anner\Cashew\budget\andr
+oid\app\build.gradle:89)
+[        ] 	at org.gradl
+e.groovy.scripts.interna
+l.DefaultScriptRunnerFac
+tory$ScriptRunnerImpl.ru
+n(DefaultScriptRunnerFac
+tory.java:91)
+[        ] 	... 276 more
+[        ] BUILD FAILED 
+in 1s
+[        ] Watched directory hierarchies: [C:\src\flutter\packages\flutter_tools\gradle]
+[ +534 ms] Running Gradle task 'assembleDebug'... (completed in 2,041ms)
+[  +46 ms] "flutter apk" took 4,624ms.
+[  +80 ms] Gradle task 
+assembleDebug failed 
+with exit code 1
+[   +1 ms] 
+           #0      
+throwToolExit (package:f
+lutter_tools/src/base/co
+mmon.dart:34:3)
+           #1      Andro
+idGradleBuilder.buildGra
+dleApp (package:flutter_
+tools/src/android/gradle
+.dart:582:7)
+           
+<asynchronous 
+suspension>
+           #2      Andro
+idGradleBuilder.buildApk
+ (package:flutter_tools/
+src/android/gradle.dart:
+242:5)
+           
+<asynchronous 
+suspension>
+           #3      Build
+ApkCommand.runCommand (p
+ackage:flutter_tools/src
+/commands/build_apk.dart
+:141:5)
+           
+<asynchronous 
+suspension>
+           #4      Flutt
+erCommand.run.<anonymous
+ closure> (package:flutt
+er_tools/src/runner/flut
+ter_command.dart:1563:27
+)
+           
+<asynchronous 
+suspension>
+           #5      AppCo
+ntext.run.<anonymous 
+closure> (package:flutte
+r_tools/src/base/context
+.dart:154:19)
+           
+<asynchronous 
+suspension>
+           #6      Comma
+ndRunner.runCommand (pac
+kage:args/command_runner
+.dart:212:13)
+           
+<asynchronous 
+suspension>
+           #7      Flutt
+erCommandRunner.runComma
+nd.<anonymous closure> (
+package:flutter_tools/sr
+c/runner/flutter_command
+_runner.dart:494:9)
+           
+<asynchronous 
+suspension>
+           #8      AppCo
+ntext.run.<anonymous 
+closure> (package:flutte
+r_tools/src/base/context
+.dart:154:19)
+           
+<asynchronous 
+suspension>
+           #9      Flutt
+erCommandRunner.runComma
+nd (package:flutter_tool
+s/src/runner/flutter_com
+mand_runner.dart:431:5)
+           
+<asynchronous 
+suspension>
+           #10     
+run.<anonymous 
+closure>.<anonymous 
+closure> (package:flutte
+r_tools/runner.dart:98:1
+1)
+           
+<asynchronous 
+suspension>
+           #11     AppCo
+ntext.run.<anonymous 
+closure> (package:flutte
+r_tools/src/base/context
+.dart:154:19)
+           
+<asynchronous 
+suspension>
+           #12     main 
+(package:flutter_tools/e
+xecutable.dart:102:3)
+           
+<asynchronous 
+suspension>
+
+
+[        ] Running 1 shutdown hook
+[   +1 ms] Shutdown hooks complete
+[ +159 ms] exiting with code 1
