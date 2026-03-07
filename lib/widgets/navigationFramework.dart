@@ -436,7 +436,23 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
           context: context, popRouteWithPurchase: false);
 
       if (entireAppLoaded == false) {
-        await runAllCloudFunctions(context);
+        // Add timeout to prevent app from hanging on cloud sync
+        try {
+          await runAllCloudFunctions(context).timeout(
+            Duration(seconds: 30),
+            onTimeout: () {
+              print("Cloud functions timed out after 30 seconds, continuing anyway");
+              loadingIndeterminateKey.currentState?.setVisibility(false);
+              runningCloudFunctions = false;
+              return false;
+            },
+          );
+        } catch (e) {
+          print("Error or timeout in cloud functions: $e");
+          loadingIndeterminateKey.currentState?.setVisibility(false);
+          runningCloudFunctions = false;
+          // Continue anyway - don't block app startup
+        }
       }
 
       // Do this after cloud functions attempt (i.e. if user is not signed in we can show it)
@@ -457,7 +473,9 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
       await database.deleteWanderingTitles();
       await database.fixDuplicateAssociatedTitles();
 
+      // Always set to true, even if cloud functions failed
       entireAppLoaded = true;
+      loadingIndeterminateKey.currentState?.setVisibility(false);
 
       print("Entire app loaded");
 

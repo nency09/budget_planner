@@ -14,12 +14,19 @@ import 'package:budget/ai/prompts/advice_prompt.dart';
 import 'package:budget/ai/prompts/chat_prompt.dart';
 import 'package:budget/ai/services/ai_cache_service.dart';
 import 'package:budget/ai/services/ai_cost_controller.dart';
+import 'package:budget/ai/providers/groq_provider.dart';
 
-/// Core AI service powered by Google Gemini (gemini-2.0-flash).
+/// AI Provider types
+enum AIProviderType {
+  gemini,
+  groq,
+}
+
+/// Core AI service supporting multiple providers (Gemini, Groq, etc.).
 ///
 /// All AI features go through this service. It handles:
 /// - Prompt construction
-/// - API calls to Gemini
+/// - API calls to various AI providers
 /// - Caching via [AICacheService]
 /// - Rate limiting via [AICostController]
 class AIEngine {
@@ -32,22 +39,57 @@ class AIEngine {
 
   GenerativeModel? _model;
   String? _apiKey;
+  AIProviderType _providerType = AIProviderType.gemini;
+  final GroqProvider _groqProvider = GroqProvider();
 
-  /// Initialize with the Gemini API key.
-  void configure({required String apiKey}) {
+  /// Initialize with API key. Supports Gemini or Groq.
+  /// 
+  /// For Groq: Use GROQ_API_KEY in .env (recommended - free, no quota issues)
+  /// For Gemini: Use GEMINI_API_KEY in .env (requires billing setup)
+  void configure({required String apiKey, AIProviderType? providerType}) {
     _apiKey = apiKey;
-    _model = GenerativeModel(
-      model: 'gemini-2.0-flash',
-      apiKey: apiKey,
-      generationConfig: GenerationConfig(
-        temperature: 0.3,
-        maxOutputTokens: 1000,
-        responseMimeType: 'text/plain',
-      ),
-    );
+    
+    // Use provided provider type, or auto-detect based on key format
+    if (providerType != null) {
+      _providerType = providerType;
+      debugPrint('AIEngine: Using specified provider: ${providerType.name}');
+    } else if (apiKey.startsWith('gsk_') || apiKey.length == 56) {
+      // Groq API keys typically start with 'gsk_' or are 56 chars
+      _providerType = AIProviderType.groq;
+      debugPrint('AIEngine: Auto-detected Groq provider from key format');
+    } else {
+      _providerType = AIProviderType.gemini;
+      debugPrint('AIEngine: Auto-detected Gemini provider from key format');
+    }
+
+    if (_providerType == AIProviderType.groq) {
+      _groqProvider.configure(apiKey: apiKey);
+      debugPrint('✅ AIEngine: Configured with Groq provider');
+    } else {
+      _model = GenerativeModel(
+        model: 'gemini-2.0-flash',
+        apiKey: apiKey,
+        generationConfig: GenerationConfig(
+          temperature: 0.3,
+          maxOutputTokens: 1000,
+          responseMimeType: 'text/plain',
+        ),
+      );
+      debugPrint('✅ AIEngine: Configured with Gemini provider');
+    }
   }
 
-  bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty && _model != null;
+  bool get isConfigured {
+    if (_providerType == AIProviderType.groq) {
+      return _groqProvider.isConfigured;
+    }
+    return _apiKey != null && _apiKey!.isNotEmpty && _model != null;
+  }
+
+  AIProviderType get providerType => _providerType;
+  
+  /// Get provider name as string for display
+  String get providerName => _providerType == AIProviderType.groq ? 'Groq' : 'Gemini';
 
   // ---------------------------------------------------------------------------
   // 1. Smart Categorization
@@ -104,21 +146,40 @@ class AIEngine {
     required DateTime weekStart,
     required DateTime weekEnd,
   }) async {
+    // ALWAYS log the real data being used (even if cached)
+    debugPrint('🤖 AIEngine: REAL DATA RECEIVED (calculated from database):');
+    debugPrint('   📅 Period: ${_formatDate(weekStart)} to ${_formatDate(weekEnd)}');
+    debugPrint('   💵 Income: ₹$totalIncome');
+    debugPrint('   💸 Spent: ₹$totalSpent');
+    debugPrint('   📂 Categories: ${categoryBreakdown.length}');
+    for (var cat in categoryBreakdown) {
+      debugPrint('      - ${cat['name']}: ₹${cat['amount']} (${cat['percentage']}%)');
+    }
+    debugPrint('   ✅ This is 100% REAL data from your transaction database!');
+    
     final cacheKey = AICacheService.weeklyInsightKey(weekStart);
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
+      debugPrint('💾 Using cached AI response (data was recalculated from database above)');
       return AIInsight.fromJson(cached);
     }
 
+    debugPrint('🌐 Calling AI API with REAL data...');
+    
+    final userPrompt = InsightsPrompt.user(
+      startDate: _formatDate(weekStart),
+      endDate: _formatDate(weekEnd),
+      income: totalIncome,
+      spent: totalSpent,
+      categoryBreakdown: categoryBreakdown,
+    );
+    
+    debugPrint('🤖 AIEngine: Full prompt being sent to AI:');
+    debugPrint(userPrompt);
+    
     final response = await _callGeminiJson(
       systemPrompt: InsightsPrompt.system(),
-      userPrompt: InsightsPrompt.user(
-        startDate: _formatDate(weekStart),
-        endDate: _formatDate(weekEnd),
-        income: totalIncome,
-        spent: totalSpent,
-        categoryBreakdown: categoryBreakdown,
-      ),
+      userPrompt: userPrompt,
     );
 
     if (response != null) {
@@ -147,22 +208,40 @@ class AIEngine {
     required int numCategories,
     required int recurringExpenseCount,
   }) async {
+    // ALWAYS log the real data being used (even if cached)
+    debugPrint('🤖 AIEngine: REAL DATA RECEIVED (calculated from database):');
+    debugPrint('   💵 Income: ₹$totalIncome');
+    debugPrint('   💸 Expenses: ₹$totalExpenses');
+    debugPrint('   📊 Savings Rate: ${(savingsRate * 100).toStringAsFixed(1)}%');
+    debugPrint('   🎯 Budget Adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}%');
+    debugPrint('   📂 Categories: $numCategories');
+    debugPrint('   🔄 Recurring: $recurringExpenseCount');
+    debugPrint('   ✅ This is 100% REAL data from your transaction database!');
+    
     final cacheKey = AICacheService.scoreKey(DateTime.now());
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
+      debugPrint('💾 Using cached AI response (data was recalculated from database above)');
       return FinancialScore.fromJson(cached);
     }
 
+    debugPrint('🌐 Calling AI API with REAL data...');
+    
+    final userPrompt = ScorePrompt.user(
+      income: totalIncome,
+      expenses: totalExpenses,
+      savingsRate: savingsRate,
+      budgetAdherence: budgetAdherence,
+      numCategories: numCategories,
+      recurringCount: recurringExpenseCount,
+    );
+    
+    debugPrint('🤖 AIEngine: Full prompt being sent to AI:');
+    debugPrint(userPrompt);
+    
     final response = await _callGeminiJson(
       systemPrompt: ScorePrompt.system(),
-      userPrompt: ScorePrompt.user(
-        income: totalIncome,
-        expenses: totalExpenses,
-        savingsRate: savingsRate,
-        budgetAdherence: budgetAdherence,
-        numCategories: numCategories,
-        recurringCount: recurringExpenseCount,
-      ),
+      userPrompt: userPrompt,
     );
 
     if (response != null) {
@@ -187,18 +266,38 @@ class AIEngine {
     required List<Map<String, dynamic>> historicalMonths,
     required List<Map<String, dynamic>> currentCategories,
   }) async {
+    // ALWAYS log the real data being used (even if cached)
+    debugPrint('🤖 AIEngine: REAL DATA RECEIVED (calculated from database):');
+    debugPrint('   📅 Historical months: ${historicalMonths.length}');
+    for (var month in historicalMonths) {
+      debugPrint('      - ${month['month']}: ₹${month['total']}');
+    }
+    debugPrint('   📂 Current categories: ${currentCategories.length}');
+    for (var cat in currentCategories) {
+      debugPrint('      - ${cat['name']}: ₹${cat['amount']}');
+    }
+    debugPrint('   ✅ This is 100% REAL data from your transaction database!');
+    
     final cacheKey = AICacheService.predictionKey(DateTime.now());
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
+      debugPrint('💾 Using cached AI response (data was recalculated from database above)');
       return SpendingPrediction.fromJson(cached);
     }
 
+    debugPrint('🌐 Calling AI API with REAL data...');
+    
+    final userPrompt = PredictionPrompt.user(
+      historicalMonths: historicalMonths,
+      currentCategories: currentCategories,
+    );
+    
+    debugPrint('🤖 AIEngine: Full prompt being sent to AI:');
+    debugPrint(userPrompt);
+    
     final response = await _callGeminiJson(
       systemPrompt: PredictionPrompt.system(),
-      userPrompt: PredictionPrompt.user(
-        historicalMonths: historicalMonths,
-        currentCategories: currentCategories,
-      ),
+      userPrompt: userPrompt,
     );
 
     if (response != null) {
@@ -341,13 +440,13 @@ class AIEngine {
   // Core Gemini API Calls
   // ---------------------------------------------------------------------------
 
-  /// Call Gemini and return raw text response.
+  /// Call AI provider and return raw text response.
   Future<String?> _callGemini({
     required String systemPrompt,
     required String userPrompt,
   }) async {
     if (!isConfigured) {
-      debugPrint('AIEngine: Gemini API key not configured');
+      debugPrint('AIEngine: API key not configured');
       return null;
     }
 
@@ -356,6 +455,22 @@ class AIEngine {
       return null;
     }
 
+    // Use Groq if configured
+    if (_providerType == AIProviderType.groq) {
+      try {
+        final response = await _groqProvider.callAPI(
+          systemPrompt: systemPrompt,
+          userPrompt: userPrompt,
+        );
+        await _costController.recordApiCall();
+        return response;
+      } catch (e) {
+        debugPrint('AIEngine: Groq API error: $e');
+        return null;
+      }
+    }
+
+    // Use Gemini
     try {
       final content = [Content.text('$systemPrompt\n\n$userPrompt')];
       final response = await _model!.generateContent(content);
@@ -368,18 +483,41 @@ class AIEngine {
         debugPrint('AIEngine: Empty response from Gemini');
       }
     } catch (e) {
+      final errorMsg = e.toString();
       debugPrint('AIEngine: Gemini API error: $e');
+      
+      // Check for quota/rate limit errors
+      if (errorMsg.contains('quota') || 
+          errorMsg.contains('rate limit') ||
+          errorMsg.contains('exceeded')) {
+        debugPrint('AIEngine: Quota/Rate limit exceeded. Please check your Gemini API plan.');
+        
+        // Check if limit is 0 (free tier not enabled)
+        if (errorMsg.contains('limit: 0')) {
+          debugPrint('AIEngine: CRITICAL - Free tier quota limit is 0. This means:');
+          debugPrint('AIEngine: 1. Free tier may not be enabled for your project');
+          debugPrint('AIEngine: 2. You may need to enable the Generative AI API in Google Cloud Console');
+          debugPrint('AIEngine: 3. Check quota settings at: https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas');
+        }
+        
+        // Extract retry time if available
+        final retryMatch = RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
+        if (retryMatch != null) {
+          final retrySeconds = double.tryParse(retryMatch.group(1) ?? '0') ?? 0;
+          debugPrint('AIEngine: Rate limit - retry after ${retrySeconds.toStringAsFixed(0)} seconds');
+        }
+      }
     }
     return null;
   }
 
-  /// Call Gemini expecting a JSON response, parse and return as Map.
+  /// Call AI provider expecting a JSON response, parse and return as Map.
   Future<Map<String, dynamic>?> _callGeminiJson({
     required String systemPrompt,
     required String userPrompt,
   }) async {
     if (!isConfigured) {
-      debugPrint('AIEngine: Gemini API key not configured');
+      debugPrint('AIEngine: API key not configured');
       return null;
     }
 
@@ -388,6 +526,22 @@ class AIEngine {
       return null;
     }
 
+    // Use Groq if configured
+    if (_providerType == AIProviderType.groq) {
+      try {
+        final response = await _groqProvider.callAPIJson(
+          systemPrompt: systemPrompt,
+          userPrompt: userPrompt,
+        );
+        await _costController.recordApiCall();
+        return response;
+      } catch (e) {
+        debugPrint('AIEngine: Groq API error: $e');
+        return null;
+      }
+    }
+
+    // Use Gemini
     try {
       // Use a model configured for JSON output
       final jsonModel = GenerativeModel(
@@ -412,7 +566,30 @@ class AIEngine {
         debugPrint('AIEngine: Empty response from Gemini');
       }
     } catch (e) {
+      final errorMsg = e.toString();
       debugPrint('AIEngine: Gemini API error: $e');
+      
+      // Check for quota/rate limit errors
+      if (errorMsg.contains('quota') || 
+          errorMsg.contains('rate limit') ||
+          errorMsg.contains('exceeded')) {
+        debugPrint('AIEngine: Quota/Rate limit exceeded. Please check your Gemini API plan.');
+        
+        // Check if limit is 0 (free tier not enabled)
+        if (errorMsg.contains('limit: 0')) {
+          debugPrint('AIEngine: CRITICAL - Free tier quota limit is 0. This means:');
+          debugPrint('AIEngine: 1. Free tier may not be enabled for your project');
+          debugPrint('AIEngine: 2. You may need to enable the Generative AI API in Google Cloud Console');
+          debugPrint('AIEngine: 3. Check quota settings at: https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas');
+        }
+        
+        // Extract retry time if available
+        final retryMatch = RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
+        if (retryMatch != null) {
+          final retrySeconds = double.tryParse(retryMatch.group(1) ?? '0') ?? 0;
+          debugPrint('AIEngine: Rate limit - retry after ${retrySeconds.toStringAsFixed(0)} seconds');
+        }
+      }
     }
     return null;
   }

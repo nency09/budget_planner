@@ -50,7 +50,14 @@ captureLogs(Function body) {
     () async {
       await body();
     },
-    (error, stackTrace) {},
+    (error, stackTrace) {
+      // Log errors instead of silently swallowing them
+      logService.log('ERROR in captureLogs: $error');
+      logService.log('Stack trace: $stackTrace');
+      print('ERROR in captureLogs: $error');
+      print('Stack trace: $stackTrace');
+      // Don't re-throw - let the outer try-catch handle it
+    },
     zoneSpecification: ZoneSpecification(
       print: (Zone self, ZoneDelegate parent, Zone zone, String message) {
         logService.log(message);

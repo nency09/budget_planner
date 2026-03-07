@@ -55,3 +55,8 @@ keystore.jks
 
 /.firebase
 .firebase/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
