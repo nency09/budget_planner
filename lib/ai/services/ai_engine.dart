@@ -15,11 +15,14 @@ import 'package:budget/ai/prompts/chat_prompt.dart';
 import 'package:budget/ai/services/ai_cache_service.dart';
 import 'package:budget/ai/services/ai_cost_controller.dart';
 import 'package:budget/ai/providers/groq_provider.dart';
+import 'package:budget/ai/providers/openai_provider.dart';
+import 'package:budget/struct/databaseGlobal.dart';
 
 /// AI Provider types
 enum AIProviderType {
   gemini,
   groq,
+  openai, // Primary provider for Phase 1
 }
 
 /// Core AI service supporting multiple providers (Gemini, Groq, etc.).
@@ -39,12 +42,14 @@ class AIEngine {
 
   GenerativeModel? _model;
   String? _apiKey;
-  AIProviderType _providerType = AIProviderType.gemini;
+  AIProviderType _providerType = AIProviderType.openai; // Default to OpenAI for Phase 1
   final GroqProvider _groqProvider = GroqProvider();
+  final OpenAIProvider _openaiProvider = OpenAIProvider();
 
-  /// Initialize with API key. Supports Gemini or Groq.
+  /// Initialize with API key. Supports OpenAI (primary), Gemini, or Groq.
   /// 
-  /// For Groq: Use GROQ_API_KEY in .env (recommended - free, no quota issues)
+  /// For OpenAI (Phase 1): Use OPENAI_API_KEY in .env (gpt-4o-mini)
+  /// For Groq: Use GROQ_API_KEY in .env (free alternative)
   /// For Gemini: Use GEMINI_API_KEY in .env (requires billing setup)
   void configure({required String apiKey, AIProviderType? providerType}) {
     _apiKey = apiKey;
@@ -53,6 +58,10 @@ class AIEngine {
     if (providerType != null) {
       _providerType = providerType;
       debugPrint('AIEngine: Using specified provider: ${providerType.name}');
+    } else if (apiKey.startsWith('sk-')) {
+      // OpenAI API keys start with 'sk-'
+      _providerType = AIProviderType.openai;
+      debugPrint('AIEngine: Auto-detected OpenAI provider from key format');
     } else if (apiKey.startsWith('gsk_') || apiKey.length == 56) {
       // Groq API keys typically start with 'gsk_' or are 56 chars
       _providerType = AIProviderType.groq;
@@ -62,7 +71,10 @@ class AIEngine {
       debugPrint('AIEngine: Auto-detected Gemini provider from key format');
     }
 
-    if (_providerType == AIProviderType.groq) {
+    if (_providerType == AIProviderType.openai) {
+      _openaiProvider.configure(apiKey: apiKey);
+      debugPrint('✅ AIEngine: Configured with OpenAI provider (gpt-4o-mini)');
+    } else if (_providerType == AIProviderType.groq) {
       _groqProvider.configure(apiKey: apiKey);
       debugPrint('✅ AIEngine: Configured with Groq provider');
     } else {
@@ -80,7 +92,9 @@ class AIEngine {
   }
 
   bool get isConfigured {
-    if (_providerType == AIProviderType.groq) {
+    if (_providerType == AIProviderType.openai) {
+      return _openaiProvider.isConfigured;
+    } else if (_providerType == AIProviderType.groq) {
       return _groqProvider.isConfigured;
     }
     return _apiKey != null && _apiKey!.isNotEmpty && _model != null;
@@ -89,14 +103,25 @@ class AIEngine {
   AIProviderType get providerType => _providerType;
   
   /// Get provider name as string for display
-  String get providerName => _providerType == AIProviderType.groq ? 'Groq' : 'Gemini';
+  String get providerName {
+    switch (_providerType) {
+      case AIProviderType.openai:
+        return 'OpenAI';
+      case AIProviderType.groq:
+        return 'Groq';
+      case AIProviderType.gemini:
+        return 'Gemini';
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // 1. Smart Categorization
   // ---------------------------------------------------------------------------
 
   /// Categorize a transaction by merchant name.
-  /// Runs ONCE per unique merchant — result is permanently cached.
+  /// Runs ONCE per unique merchant — result is permanently cached in database.
+  /// 
+  /// Phase 1 Implementation: Uses database table instead of SharedPreferences
   Future<String?> categorizeTransaction({
     required String merchantName,
     required String transactionNote,
@@ -104,13 +129,60 @@ class AIEngine {
   }) async {
     if (existingCategories.isEmpty) return null;
 
-    final cacheKey = AICacheService.categorizationKey(merchantName);
-    final cached = await _cache.get(cacheKey);
-    if (cached != null) {
-      return cached['category'] as String?;
+    // Normalize merchant name (lowercase, trimmed)
+    final normalizedMerchant = merchantName.trim().toLowerCase();
+
+    // Check database cache first (Phase 1 requirement)
+    try {
+      final cached = await database.getMerchantCategoryCache(normalizedMerchant);
+      if (cached != null) {
+        debugPrint('✅ AIEngine: Found cached category for "$merchantName": ${cached.predictedCategory}');
+        // Return the category name (String), not the cached object
+        final String categoryName = cached.predictedCategory;
+        // Validate it's still in the existing categories list
+        final match = existingCategories.firstWhere(
+          (String c) => c.toLowerCase() == categoryName.toLowerCase(),
+          orElse: () => '',
+        );
+        if (match.isNotEmpty) {
+          return match;
+        } else {
+          debugPrint('⚠️ AIEngine: Cached category "$categoryName" no longer exists, will re-categorize');
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ AIEngine: Error checking database cache: $e');
     }
 
-    final response = await _callGemini(
+    // Check Associated Titles (existing logic) before calling AI
+    try {
+      final associatedTitles = await database.getAllAssociatedTitles();
+      for (var associated in associatedTitles) {
+        if (merchantName.toLowerCase().contains(associated.title.toLowerCase()) ||
+            associated.title.toLowerCase().contains(merchantName.toLowerCase())) {
+          debugPrint('✅ AIEngine: Found category from Associated Titles: ${associated.categoryFk}');
+          // Cache this in database for future use
+          await database.createOrUpdateMerchantCategoryCache(
+            merchantName: normalizedMerchant,
+            predictedCategory: associated.categoryFk,
+            confidence: 1.0,
+          );
+          return associated.categoryFk;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ AIEngine: Error checking Associated Titles: $e');
+    }
+
+    // If not found, call AI (OpenAI for Phase 1)
+    if (!isConfigured) {
+      debugPrint('⚠️ AIEngine: Not configured, cannot categorize');
+      return null;
+    }
+
+    debugPrint('🤖 AIEngine: Calling AI to categorize "$merchantName"');
+
+    final response = await _callAI(
       systemPrompt: CategorizationPrompt.system(),
       userPrompt: CategorizationPrompt.user(
         merchantName: merchantName,
@@ -127,11 +199,26 @@ class AIEngine {
         orElse: () => '',
       );
       if (match.isNotEmpty) {
-        await _cache.setPermanent(cacheKey, {'category': match});
+        // Store in database cache (Phase 1 requirement)
+        try {
+          await database.createOrUpdateMerchantCategoryCache(
+            merchantName: normalizedMerchant,
+            predictedCategory: match,
+            confidence: 0.9, // AI prediction confidence
+          );
+          debugPrint('✅ AIEngine: Cached category "$match" for "$merchantName" in database');
+        } catch (e) {
+          debugPrint('⚠️ AIEngine: Error caching category: $e');
+        }
         return match;
+      } else {
+        debugPrint('⚠️ AIEngine: AI returned invalid category: "$category"');
       }
     }
-    return null;
+    
+    // Fallback to "Other" if AI fails
+    debugPrint('⚠️ AIEngine: AI categorization failed, using default "Other"');
+    return null; // Let caller handle default
   }
 
   // ---------------------------------------------------------------------------
@@ -157,10 +244,26 @@ class AIEngine {
     }
     debugPrint('   ✅ This is 100% REAL data from your transaction database!');
     
+    // 1) Check persistent weekly insights table first (DB cache)
+    try {
+      final existing = await database.getWeeklyInsight(weekStart);
+      if (existing != null) {
+        debugPrint('💾 Using cached weekly insight from database (week starting ${_formatDate(weekStart)})');
+        return AIInsight(
+          summary: existing.insightText,
+          topTip: '', // Top tip is embedded in text for now
+          insights: const [],
+        );
+      }
+    } catch (e) {
+      debugPrint('AIEngine: Error reading weekly insight from database: $e');
+    }
+
+    // 2) Legacy in-memory/shared-pref cache (fallback)
     final cacheKey = AICacheService.weeklyInsightKey(weekStart);
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
-      debugPrint('💾 Using cached AI response (data was recalculated from database above)');
+      debugPrint('💾 Using cached weekly insight from AICacheService (week starting ${_formatDate(weekStart)})');
       return AIInsight.fromJson(cached);
     }
 
@@ -185,8 +288,23 @@ class AIEngine {
     if (response != null) {
       try {
         final insight = AIInsight.fromJson(response);
+
+        // Persist to weekly insights table so we never recompute this week again.
+        try {
+          await database.createOrUpdateWeeklyInsight(
+            weekStart: weekStart,
+            weekEnd: weekEnd,
+            insightText: insight.summary,
+          );
+          debugPrint('✅ AIEngine: Saved weekly insight to database for week starting ${_formatDate(weekStart)}');
+        } catch (e) {
+          debugPrint('AIEngine: Error saving weekly insight to database: $e');
+        }
+
+        // Also keep short-lived cache for fast re-open within the same session.
         await _cache.set(cacheKey, insight.toJson(),
             ttl: const Duration(days: 7));
+
         return insight;
       } catch (e) {
         debugPrint('AIEngine: Failed to parse insights response: $e');
@@ -441,7 +559,8 @@ class AIEngine {
   // ---------------------------------------------------------------------------
 
   /// Call AI provider and return raw text response.
-  Future<String?> _callGemini({
+  /// Phase 1: Supports OpenAI (primary), Groq, and Gemini
+  Future<String?> _callAI({
     required String systemPrompt,
     required String userPrompt,
   }) async {
@@ -453,6 +572,22 @@ class AIEngine {
     if (!(await _costController.canMakeApiCall())) {
       debugPrint('AIEngine: Daily API call limit reached');
       return null;
+    }
+
+    // Use OpenAI if configured (Phase 1 primary provider)
+    if (_providerType == AIProviderType.openai) {
+      try {
+        final response = await _openaiProvider.callAPI(
+          systemPrompt: systemPrompt,
+          userPrompt: userPrompt,
+          maxTokens: 500,
+        );
+        await _costController.recordApiCall();
+        return response;
+      } catch (e) {
+        debugPrint('AIEngine: OpenAI API error: $e');
+        return null;
+      }
     }
 
     // Use Groq if configured
@@ -509,6 +644,15 @@ class AIEngine {
       }
     }
     return null;
+  }
+
+  /// Legacy method name - redirects to _callAI
+  @Deprecated('Use _callAI instead')
+  Future<String?> _callGemini({
+    required String systemPrompt,
+    required String userPrompt,
+  }) async {
+    return _callAI(systemPrompt: systemPrompt, userPrompt: userPrompt);
   }
 
   /// Call AI provider expecting a JSON response, parse and return as Map.

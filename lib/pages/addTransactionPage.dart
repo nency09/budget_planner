@@ -67,6 +67,7 @@ import 'package:budget/struct/linkHighlighter.dart';
 import 'package:budget/widgets/listItem.dart';
 import 'package:budget/widgets/outlinedButtonStacked.dart';
 import 'package:budget/widgets/tappableTextEntry.dart';
+import 'package:budget/ai/services/ai_engine.dart';
 
 //TODO
 //only show the tags that correspond to selected category
@@ -132,6 +133,8 @@ class AddTransactionPage extends StatefulWidget {
 
 class _AddTransactionPageState extends State<AddTransactionPage>
     with SingleTickerProviderStateMixin {
+  final AIEngine _aiEngine = AIEngine();
+
   TransactionCategory? selectedCategory;
   TransactionCategory? selectedSubCategory;
   double? selectedAmount;
@@ -247,6 +250,64 @@ class _AddTransactionPageState extends State<AddTransactionPage>
   void setSelectedNoteController(String note, {bool setInput = true}) {
     if (setInput) setTextInput(_noteInputController, note);
     return;
+  }
+
+  /// Auto-suggest a category using AI when the merchant/title is unknown.
+  /// Uses database cache and Associated Titles before calling the API.
+  Future<void> _maybeAutoCategorizeWithAI() async {
+    // Only when no category is selected, AI is configured, and we have a title.
+    if (selectedCategory != null ||
+        !_aiEngine.isConfigured ||
+        (selectedTitle == null || selectedTitle!.trim().isEmpty)) {
+      return;
+    }
+
+    try {
+      // Load all main categories for the current wallet (names only)
+      final categories =
+          await database.getAllCategories(includeSubCategories: false);
+      if (categories.isEmpty) return;
+
+      final existingCategoryNames =
+          categories.map((c) => c.name).toList(growable: false);
+
+      final merchantName = selectedTitle!.trim();
+      final note = _noteInputController.text.trim();
+
+      final suggestedName = await _aiEngine.categorizeTransaction(
+        merchantName: merchantName,
+        transactionNote: note,
+        existingCategories: existingCategoryNames,
+      );
+
+      if (!mounted || suggestedName == null || suggestedName.isEmpty) return;
+
+      // Find the actual TransactionCategory for the suggested name
+      final TransactionCategory? suggestedCategory = categories.firstWhere(
+        (c) => c.name.toLowerCase() == suggestedName.toLowerCase(),
+        orElse: () => categories.firstWhere(
+          (c) => c.categoryPk == "0",
+          orElse: () => categories.first,
+        ),
+      );
+
+      if (suggestedCategory != null && selectedCategory == null && mounted) {
+        setState(() {
+          selectedCategory = suggestedCategory;
+          selectedSubCategory = null;
+        });
+        // Optional: brief feedback to the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Suggested category: ${suggestedCategory.name}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Never block the user if AI fails
+      debugPrint('AI auto-categorization error: $e');
+    }
   }
 
   void setSelectedType(String type) {
@@ -1078,6 +1139,10 @@ class _AddTransactionPageState extends State<AddTransactionPage>
           titleInputController: _titleInputController,
           setSelectedCategory: setSelectedCategory,
           setSelectedSubCategory: setSelectedSubCategory,
+          onSubmitted: (_) {
+            // When the user submits the title field, try auto-categorization.
+            _maybeAutoCategorizeWithAI();
+          },
         ),
         Container(height: 14),
         Padding(

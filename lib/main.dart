@@ -13,7 +13,6 @@ import 'package:budget/widgets/util/onAppResume.dart';
 import 'package:budget/widgets/util/watchForDayChange.dart';
 import 'package:budget/widgets/watchAllWallets.dart';
 import 'package:budget/database/tables.dart';
-import 'package:budget/database/updateWalletCurrencyToINR.dart';
 import 'package:budget/database/reduceTransactionsForTesting.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/settings.dart';
@@ -42,9 +41,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'ai/services/ai_engine.dart';
 
 // Requires hot restart when changed
-bool enableDevicePreview = false && kDebugMode;
-bool allowDebugFlags = true || kIsWeb;
-bool allowDangerousDebugFlags = kDebugMode;
+const bool enableDevicePreview = false;
+const bool allowDebugFlags = true;
+const bool allowDangerousDebugFlags = kDebugMode;
 
 void main() async {
   try {
@@ -121,12 +120,9 @@ Future<void> _initializeApp() async {
     database = await constructDb('db').timeout(Duration(seconds: 10));
     debugPrint('Database constructed');
     
-    // Convert all USD wallets to INR
-    try {
-      await updateAllWalletsToINR();
-    } catch (e) {
-      debugPrint('Warning: Could not update wallets to INR: $e');
-    }
+    // NOTE: We no longer force-convert all wallets to INR here.
+    // Wallets keep their original currencies (EUR, USD, INR, etc.),
+    // and UI/AI use per-wallet currency logic via currencyFunctions.dart.
     
     // Reduce transactions to last 20 for easier AI verification
     try {

@@ -96,15 +96,29 @@ double? amountRatioFromToCurrency(
   return exchangeRateFromUSDToTarget * exchangeRateFromCurrentToUSD;
 }
 
-// assume selected wallets currency
+// Internal helper: safely look up a currency symbol (case-insensitive on key)
+String _lookupCurrencySymbol(String currencyKey) {
+  // Try exact key, then lowercase (matches generated currencies.json), then uppercase
+  return (currenciesJSON[currencyKey]?["Symbol"] ??
+          currenciesJSON[currencyKey.toLowerCase()]?["Symbol"] ??
+          currenciesJSON[currencyKey.toUpperCase()]?["Symbol"] ??
+          "");
+}
+
+// Assume selected wallet's currency if currencyKey is not provided
 String getCurrencyString(AllWallets allWallets, {String? currencyKey}) {
-  String? selectedWalletCurrency =
+  final String? selectedWalletCurrency =
       allWallets.indexedByPk[appStateSettings["selectedWalletPk"]]?.currency;
-  return currencyKey != null
-      ? (currenciesJSON[currencyKey]?["Symbol"] ?? "")
-      : selectedWalletCurrency == null
-          ? ""
-          : (currenciesJSON[selectedWalletCurrency]?["Symbol"] ?? "");
+
+  if (currencyKey != null && currencyKey.isNotEmpty) {
+    return _lookupCurrencySymbol(currencyKey);
+  }
+
+  if (selectedWalletCurrency == null || selectedWalletCurrency.isEmpty) {
+    return "";
+  }
+
+  return _lookupCurrencySymbol(selectedWalletCurrency);
 }
 
 double getCurrencyExchangeRate(
@@ -112,21 +126,38 @@ double getCurrencyExchangeRate(
   Map<String, dynamic>? appStateSettingsPassed,
 }) {
   if (currencyKey == null || currencyKey == "") return 1;
-  if ((appStateSettingsPassed ?? appStateSettings)["customCurrencyAmounts"]
-          ?[currencyKey] !=
-      null) {
-    return (appStateSettingsPassed ?? appStateSettings)["customCurrencyAmounts"]
-            [currencyKey]
-        .toDouble();
-  } else if ((appStateSettingsPassed ??
-          appStateSettings)["cachedCurrencyExchange"]?[currencyKey] !=
-      null) {
-    return (appStateSettingsPassed ??
-            appStateSettings)["cachedCurrencyExchange"][currencyKey]
-        .toDouble();
-  } else {
-    return 1;
+
+  final settings = appStateSettingsPassed ?? appStateSettings;
+  final key = currencyKey;
+  final keyLower = currencyKey.toLowerCase();
+  final keyUpper = currencyKey.toUpperCase();
+
+  // 1) Custom currency amounts (user overrides), case-insensitive on key
+  final custom = settings["customCurrencyAmounts"] ?? {};
+  if (custom[key] != null) {
+    return custom[key].toDouble();
   }
+  if (custom[keyLower] != null) {
+    return custom[keyLower].toDouble();
+  }
+  if (custom[keyUpper] != null) {
+    return custom[keyUpper].toDouble();
+  }
+
+  // 2) Cached currency exchange from API (keys are typically lowercase, e.g. "eur")
+  final cached = settings["cachedCurrencyExchange"] ?? {};
+  if (cached[key] != null) {
+    return cached[key].toDouble();
+  }
+  if (cached[keyLower] != null) {
+    return cached[keyLower].toDouble();
+  }
+  if (cached[keyUpper] != null) {
+    return cached[keyUpper].toDouble();
+  }
+
+  // Fallback: no known rate, treat as 1:1
+  return 1;
 }
 
 double budgetAmountToPrimaryCurrency(AllWallets allWallets, Budget budget) {

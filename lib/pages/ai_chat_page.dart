@@ -1,8 +1,12 @@
 import 'package:budget/ai/models/ai_advice.dart';
 import 'package:budget/ai/services/ai_engine.dart';
+import 'package:budget/database/tables.dart';
+import 'package:budget/struct/currencyFunctions.dart';
 import 'package:budget/struct/databaseGlobal.dart';
+import 'package:budget/functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class AIChatPage extends StatefulWidget {
   const AIChatPage({super.key});
@@ -35,6 +39,9 @@ class _AIChatPageState extends State<AIChatPage> {
 
   Future<void> _loadFinancialContext() async {
     try {
+      final allWallets = Provider.of<AllWallets>(context, listen: false);
+      final currencySymbol = getCurrencyString(allWallets);
+
       final allTransactions = await database.allTransactions;
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
@@ -42,6 +49,7 @@ class _AIChatPageState extends State<AIChatPage> {
       double monthlyIncome = 0;
       double monthlyExpenses = 0;
       Map<String, double> categoryTotals = {};
+      Map<String, double> walletBalances = {};
       
       for (var transaction in allTransactions) {
         if (transaction.dateCreated.isAfter(monthStart) && transaction.paid) {
@@ -53,19 +61,41 @@ class _AIChatPageState extends State<AIChatPage> {
             categoryTotals[category.name] = 
                 (categoryTotals[category.name] ?? 0) + transaction.amount.abs();
           }
+
+          // Track simple per-wallet balance (net sum of amounts for this month)
+          final wallet = allWallets.indexedByPk[transaction.walletFk];
+          if (wallet != null) {
+            final key = wallet.walletPk;
+            final signedAmount = transaction.income
+                ? transaction.amount.abs()
+                : -transaction.amount.abs();
+            walletBalances[key] = (walletBalances[key] ?? 0) + signedAmount;
+          }
         }
       }
       
       final sortedCategories = categoryTotals.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       final topCategories = sortedCategories.take(5).map((e) => e.key).toList();
+
+      // Build wallet summary for prompt: name, currency, balance (this month)
+      final walletSummaries = <Map<String, dynamic>>[];
+      for (final wallet in allWallets.list) {
+        final balance = walletBalances[wallet.walletPk] ?? 0.0;
+        walletSummaries.add({
+          'name': getWalletStringName(allWallets, wallet),
+          'currency': wallet.currency ?? '',
+          'balance': balance,
+        });
+      }
       
       setState(() {
         _financialContext = FinancialContext(
           monthlyIncome: monthlyIncome,
           monthlyExpenses: monthlyExpenses,
           topCategories: topCategories,
-          currency: '₹',
+          currency: currencySymbol,
+          wallets: walletSummaries,
         );
       });
     } catch (e) {
@@ -119,11 +149,14 @@ class _AIChatPageState extends State<AIChatPage> {
         await _loadFinancialContext();
       }
 
+      final allWallets = Provider.of<AllWallets>(this.context, listen: false);
+      final fallbackCurrencySymbol = getCurrencyString(allWallets);
+
       final context = _financialContext ?? FinancialContext(
         monthlyIncome: 0,
         monthlyExpenses: 0,
         topCategories: [],
-        currency: '₹',
+        currency: fallbackCurrencySymbol,
       );
 
       // Build conversation history

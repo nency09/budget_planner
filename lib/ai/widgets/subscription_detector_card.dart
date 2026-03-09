@@ -1,5 +1,8 @@
 import 'package:budget/ai/models/ai_advice.dart';
+import 'package:budget/database/tables.dart';
+import 'package:budget/struct/currencyFunctions.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Card for displaying a detected subscription.
 class SubscriptionDetectorCard extends StatelessWidget {
@@ -16,6 +19,9 @@ class SubscriptionDetectorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final allWallets = Provider.of<AllWallets>(context);
+    final currencySymbol = getCurrencyString(allWallets);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(14),
@@ -56,7 +62,7 @@ class SubscriptionDetectorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '₹${subscription.estimatedAmount.toStringAsFixed(0)} / ${subscription.estimatedFrequency}'
+                  '$currencySymbol${subscription.estimatedAmount.toStringAsFixed(0)} / ${subscription.estimatedFrequency}'
                   '  •  ${subscription.occurrenceCount} occurrences',
                   style: TextStyle(
                     fontSize: 12,

@@ -9,9 +9,11 @@ import 'package:budget/ai/helpers/financial_data_helper.dart';
 import 'package:budget/pages/ai_chat_page.dart';
 import 'package:budget/widgets/framework/pageFramework.dart';
 import 'package:budget/struct/databaseGlobal.dart';
+import 'package:budget/struct/currencyFunctions.dart';
 import 'package:budget/database/tables.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class AIInsightsPage extends StatefulWidget {
   const AIInsightsPage({super.key});
@@ -746,6 +748,9 @@ class AIInsightsPageState extends State<AIInsightsPage>
 
     try {
       // Get financial context from database
+      final allWallets = Provider.of<AllWallets>(context, listen: false);
+      final currencySymbol = getCurrencyString(allWallets);
+
       final allTransactions = await database.allTransactions;
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
@@ -778,7 +783,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
         monthlyIncome: monthlyIncome,
         monthlyExpenses: monthlyExpenses,
         topCategories: topCategories,
-        currency: '₹', // INR currency symbol
+        currency: currencySymbol,
       );
       
       // Call AI

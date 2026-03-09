@@ -39,6 +39,8 @@ class FinancialContext {
   final List<String> activeBudgets;
   final List<String> savingsGoals;
   final String currency;
+  // Optional per-wallet summary: name, currency code, and current balance
+  final List<Map<String, dynamic>> wallets;
 
   FinancialContext({
     required this.monthlyIncome,
@@ -47,6 +49,7 @@ class FinancialContext {
     this.activeBudgets = const [],
     this.savingsGoals = const [],
     this.currency = '₹',
+    this.wallets = const [],
   });
 
   String toPromptString() {
@@ -59,6 +62,15 @@ class FinancialContext {
     }
     if (savingsGoals.isNotEmpty) {
       buffer.writeln('Savings Goals: ${savingsGoals.join(", ")}');
+    }
+    if (wallets.isNotEmpty) {
+      buffer.writeln('\nWallet balances:');
+      for (final w in wallets) {
+        final name = w['name']?.toString() ?? 'Wallet';
+        final cur = w['currency']?.toString().toUpperCase() ?? '';
+        final balance = (w['balance'] as num?)?.toDouble() ?? 0.0;
+        buffer.writeln('- $name ($cur): $balance');
+      }
     }
     return buffer.toString();
   }
