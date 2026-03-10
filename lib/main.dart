@@ -39,6 +39,7 @@ import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'ai/services/ai_engine.dart';
+import 'ai/services/groq_ai_service.dart';
 
 // Requires hot restart when changed
 const bool enableDevicePreview = false;
@@ -179,6 +180,8 @@ Future<void> _initializeApp() async {
         }
         debugPrint('✅ Groq API key found in .env, configuring AIEngine with Groq');
         AIEngine().configure(apiKey: cleanKey, providerType: AIProviderType.groq);
+        // Also configure GroqAIService used by session-based AI chat.
+        GroqAIService().configure(apiKey: cleanKey);
         debugPrint('✅ AIEngine configured with Groq. isConfigured: ${AIEngine().isConfigured}');
       } else {
         // Only check Gemini if Groq key is not found

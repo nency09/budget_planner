@@ -14,6 +14,7 @@ import 'package:budget/ai/prompts/advice_prompt.dart';
 import 'package:budget/ai/prompts/chat_prompt.dart';
 import 'package:budget/ai/services/ai_cache_service.dart';
 import 'package:budget/ai/services/ai_cost_controller.dart';
+import 'package:budget/ai/helpers/finance_question_validator.dart';
 import 'package:budget/ai/providers/groq_provider.dart';
 import 'package:budget/ai/providers/openai_provider.dart';
 import 'package:budget/struct/databaseGlobal.dart';
@@ -436,10 +437,21 @@ class AIEngine {
   // ---------------------------------------------------------------------------
 
   /// Generate advice for a specific question. Only runs on user request.
+  /// Validates that the question is finance-related before processing.
   Future<AIAdvice?> generateAdvice({
     required String userQuestion,
     required FinancialContext context,
   }) async {
+    // Check if the question is finance-related
+    if (!FinanceQuestionValidator.isFinanceQuestion(userQuestion)) {
+      debugPrint('🚫 AIEngine: Rejected non-finance question: "$userQuestion"');
+      // Return a rejection advice object
+      return AIAdvice(
+        answer: FinanceQuestionValidator.getRejectionMessage(),
+        actionItems: [],
+      );
+    }
+
     final contextStr = context.toPromptString();
     final cacheKey =
         AICacheService.adviceKey(userQuestion, contextStr.hashCode.toString());
@@ -459,6 +471,16 @@ class AIEngine {
     if (response != null) {
       try {
         final advice = AIAdvice.fromJson(response);
+        
+        // Additional validation: check if AI response is finance-related
+        if (!_isFinancialAdvice(advice.answer)) {
+          debugPrint('🚫 AIEngine: AI returned non-financial advice, replacing with rejection');
+          return AIAdvice(
+            answer: FinanceQuestionValidator.getRejectionMessage(),
+            actionItems: [],
+          );
+        }
+        
         await _cache.set(cacheKey, advice.toJson(),
             ttl: const Duration(hours: 24));
         return advice;
@@ -469,16 +491,52 @@ class AIEngine {
     return null;
   }
 
+  /// Check if the AI advice response appears to be finance-related.
+  bool _isFinancialAdvice(String advice) {
+    final lowerAdvice = advice.toLowerCase();
+    
+    // If response contains rejection phrases, it's valid
+    if (lowerAdvice.contains('only help with') || 
+        lowerAdvice.contains('finance') || 
+        lowerAdvice.contains('budget') ||
+        lowerAdvice.contains('financial')) {
+      return true;
+    }
+    
+    // Check for obvious non-financial topics
+    final nonFinancialIndicators = [
+      'capital of', 'president of', 'national animal',
+      'weather', 'recipe', 'movie', 'sports', 'celebrity',
+      'history of', 'geography', 'science', 'technology',
+      'programming', 'coding', 'software'
+    ];
+    
+    for (final indicator in nonFinancialIndicators) {
+      if (lowerAdvice.contains(indicator)) {
+        return false;
+      }
+    }
+    
+    return true; // Assume it's financial if no clear non-financial indicators
+  }
+
   // ---------------------------------------------------------------------------
   // 6. Answer User Query (Chat)
   // ---------------------------------------------------------------------------
 
   /// Free-form Q&A about the user's finances.
+  /// Validates that the query is finance-related before processing.
   Future<String?> answerUserQuery({
     required String query,
     required FinancialContext context,
     List<Map<String, String>> conversationHistory = const [],
   }) async {
+    // Check if the query is finance-related
+    if (!FinanceQuestionValidator.isFinanceQuestion(query)) {
+      debugPrint('🚫 AIEngine: Rejected non-finance query: "$query"');
+      return FinanceQuestionValidator.getRejectionMessage();
+    }
+
     final response = await _callGemini(
       systemPrompt: ChatPrompt.system(),
       userPrompt: ChatPrompt.user(
@@ -487,6 +545,13 @@ class AIEngine {
         conversationHistory: conversationHistory,
       ),
     );
+
+    // Additional validation: check if AI response is finance-related
+    if (response != null && !_isFinancialAdvice(response)) {
+      debugPrint('🚫 AIEngine: AI returned non-financial response, replacing with rejection');
+      return FinanceQuestionValidator.getRejectionMessage();
+    }
+
     return response;
   }
 

@@ -574,6 +574,48 @@ class AIWeeklyInsights extends Table {
   Set<Column> get primaryKey => {insightPk};
 }
 
+/// Chat sessions for "Ask AI Money Coach"
+/// Behaves like lightweight ChatGPT-style conversations stored locally.
+@DataClassName('AIChatSession')
+class AIChatSessions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Title shown in the sessions list (usually the first user question).
+  TextColumn get title =>
+      text().withLength(min: 1, max: 200)(); // Keep short for UI
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+
+  /// Updated whenever a new message is added in this session.
+  DateTimeColumn get updatedAt =>
+      dateTime().withDefault(Constant(DateTime.now()))();
+
+  /// Short preview of the latest message in this session.
+  TextColumn get lastMessagePreview =>
+      text().withLength(min: 0, max: 300).nullable()();
+}
+
+/// Individual chat messages within a session.
+@DataClassName('AIChatMessageEntry')
+class AIChatMessages extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Foreign key to [AIChatSessions.id].
+  IntColumn get sessionId =>
+      integer().references(AIChatSessions, #id, onDelete: KeyAction.cascade)();
+
+  /// "user" or "assistant"
+  TextColumn get role =>
+      text().withLength(min: 1, max: 20)(); // Keep as small text
+
+  /// Raw message content as shown in the chat UI.
+  TextColumn get message => text()();
+
+  DateTimeColumn get timestamp =>
+      dateTime().clientDefault(() => DateTime.now())();
+}
+
 class TransactionWithCategory {
   final TransactionCategory category;
   final Transaction transaction;
@@ -726,6 +768,8 @@ class CategoryWithTotal {
   Objectives,
   MerchantCategoryCache,
   AIWeeklyInsights,
+  AIChatSessions,
+  AIChatMessages,
 ])
 class FinanceDatabase extends _$FinanceDatabase {
   // FinanceDatabase() : super(_openConnection());
@@ -1227,6 +1271,19 @@ class FinanceDatabase extends _$FinanceDatabase {
         try {
           final m = createMigrator();
           await m.createTable($AIWeeklyInsightsTable(database));
+        } catch (e) {
+          // Table already exists or creation failed; ignore to avoid blocking app startup.
+        }
+        // New Phase 2: Chat session tables for AI Money Coach
+        try {
+          final m = createMigrator();
+          await m.createTable($AIChatSessionsTable(database));
+        } catch (e) {
+          // Table already exists or creation failed; ignore to avoid blocking app startup.
+        }
+        try {
+          final m = createMigrator();
+          await m.createTable($AIChatMessagesTable(database));
         } catch (e) {
           // Table already exists or creation failed; ignore to avoid blocking app startup.
         }

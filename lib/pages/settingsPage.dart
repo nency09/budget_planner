@@ -1,6 +1,7 @@
 import 'package:budget/colors.dart';
 import 'package:budget/database/tables.dart' hide AppSettings;
 import 'package:budget/pages/aboutPage.dart';
+import 'package:budget/pages/accountsPage.dart';
 import 'package:budget/pages/addTransactionPage.dart';
 import 'package:budget/pages/billSplitter.dart';
 import 'package:budget/pages/budgetsListPage.dart';
@@ -136,27 +137,73 @@ class MorePages extends StatelessWidget {
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 4),
       child: Column(
         children: [
+          // SECTION 1 — PRO + SETTINGS + LOGIN (TOP SECTION - HORIZONTAL ROW)
+          if (hasSideNavigation == false)
+            Padding(
+              padding: const EdgeInsetsDirectional.symmetric(vertical: 5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SettingsContainerOpenPage(
+                      isOutlinedColumn: true,
+                      openPage: const PremiumPage(
+                        // When a purchase succeeds, close the premium page.
+                        popRouteWithPurchase: true,
+                      ),
+                      title: "Pro",
+                      icon: appStateSettings["outlinedIcons"]
+                          ? Icons.star_outline
+                          : Icons.star_rounded,
+                      isOutlined: true,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: SettingsContainerOpenPage(
+                      isOutlinedColumn: true,
+                      openPage: SettingsPageFramework(
+                        key: settingsPageFrameworkStateKey,
+                      ),
+                      title: "Settings",
+                      icon: navBarIconsData["settings"]!.iconData,
+                      isOutlined: true,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: _LoginButtonColumn(
+                      key: settingsGoogleAccountLoginButtonKey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          // SECTION 2 — ASK ANY QUESTION
           if (hasSideNavigation == false)
             Row(
               children: [
                 Expanded(
-                  flex: 1,
-                  child: SettingsContainerOpenPage(
-                    openPage: SettingsPageFramework(
-                      key: settingsPageFrameworkStateKey,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.symmetric(
+                        vertical: 5, horizontal: 4),
+                    child: SettingsContainer(
+                      onTap: () {
+                        openUrl("https://abc.com");
+                      },
+                      title: "Ask Any Question",
+                      icon: appStateSettings["outlinedIcons"]
+                          ? Icons.question_answer_outlined
+                          : Icons.question_answer_rounded,
+                      isOutlined: true,
+                      description: "Get answers to your questions",
                     ),
-                    title: navBarIconsData["settings"]!.labelLong.tr(),
-                    icon: navBarIconsData["settings"]!.iconData,
-                    description: appStateSettings["showExtraInfoText"] == false
-                        ? null
-                        : "settings-and-customization-description".tr(),
-                    isOutlined: true,
-                    // description: "Theme, Language, CSV Import",
-                    isWideOutlined: true,
                   ),
                 ),
               ],
             ),
+          
+          // SECTION 3 — SPENDING SUMMARY
           if (hasSideNavigation == false)
             Row(
               children: [
@@ -174,103 +221,8 @@ class MorePages extends StatelessWidget {
                 ),
               ],
             ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Expanded(
-              //   child: Padding(
-              //     padding: EdgeInsetsDirectional.symmetric(vertical: 5, horizontal: 4),
-              //     child: SettingsContainer(
-              //       onTap: () {
-              //         openUrl("https://github.com/jameskokoska/Cashew");
-              //       },
-              //       title: "open-source".tr(),
-              //       icon: MoreIcons.github,
-              //       isOutlined: true,
-              //     ),
-              //   ),
-              // ),
-              Expanded(
-                child: SettingsContainerOpenPage(
-                  openPage: AboutPage(),
-                  title: "about-app".tr(namedArgs: {"app": globalAppName}),
-                  icon: navBarIconsData["about"]!.iconData,
-                  isOutlined: true,
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsetsDirectional.symmetric(
-                      vertical: 5, horizontal: 4),
-                  child: SettingsContainer(
-                    onTap: () {
-                      openBottomSheet(context, RatingPopup(), fullSnap: true);
-                    },
-                    title: "feedback".tr(),
-                    icon: appStateSettings["outlinedIcons"]
-                        ? Icons.rate_review_outlined
-                        : Icons.rate_review_rounded,
-                    isOutlined: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              appStateSettings["showBillSplitterShortcut"] == true &&
-                      hasSideNavigation == false
-                  ? Expanded(
-                      child: SettingsContainerOpenPage(
-                        openPage: BillSplitter(),
-                        title: "bill-splitter".tr(),
-                        icon: appStateSettings["outlinedIcons"]
-                            ? Icons.summarize_outlined
-                            : Icons.summarize_rounded,
-                        isOutlined: true,
-                      ),
-                    )
-                  : notificationsGlobalEnabled
-                      ? Expanded(
-                          child: SettingsContainerOpenPage(
-                            openPage: NotificationsPage(),
-                            title: navBarIconsData["notifications"]!.label.tr(),
-                            icon: navBarIconsData["notifications"]!.iconData,
-                            isOutlined: true,
-                          ),
-                        )
-                      : SizedBox.shrink(),
-              if (hasSideNavigation == false)
-                Expanded(
-                    child: GoogleAccountLoginButton(
-                  key: settingsGoogleAccountLoginButtonKey,
-                )),
-            ],
-          ),
-          if (hasSideNavigation == false)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Expanded(
-                  child: SettingsContainerOpenPage(
-                    openPage: SubscriptionsPage(),
-                    title: navBarIconsData["subscriptions"]!.label.tr(),
-                    icon: navBarIconsData["subscriptions"]!.iconData,
-                    isOutlined: true,
-                  ),
-                ),
-                Expanded(
-                  child: SettingsContainerOpenPage(
-                    openPage:
-                        UpcomingOverdueTransactions(overdueTransactions: null),
-                    title: navBarIconsData["scheduled"]!.label.tr(),
-                    icon: navBarIconsData["scheduled"]!.iconData,
-                    isOutlined: true,
-                  ),
-                ),
-              ],
-            ),
+          
+          // SECTION 4 — FINANCIAL PLANNING (Goals, Loans, Scheduled)
           if (hasSideNavigation == false)
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -297,6 +249,24 @@ class MorePages extends StatelessWidget {
             ),
           if (hasSideNavigation == false)
             Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: SettingsContainerOpenPage(
+                    openPage:
+                        UpcomingOverdueTransactions(overdueTransactions: null),
+                    title: navBarIconsData["scheduled"]!.label.tr(),
+                    icon: navBarIconsData["scheduled"]!.iconData,
+                    isOutlined: true,
+                  ),
+                ),
+                Expanded(child: SizedBox.shrink()),
+              ],
+            ),
+          
+          // SECTION 5 — MONEY MANAGEMENT (Accounts, Budgets, Categories)
+          if (hasSideNavigation == false)
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
@@ -313,7 +283,6 @@ class MorePages extends StatelessWidget {
                   flex: 1,
                   child: SettingsContainerOpenPage(
                     isOutlinedColumn: true,
-                    // If budget page not pinned to home, open budget list page
                     openPage: appStateSettings["customNavBarShortcut0"] !=
                                 "budgets" &&
                             appStateSettings["customNavBarShortcut1"] !=
@@ -328,6 +297,12 @@ class MorePages extends StatelessWidget {
                     isOutlined: true,
                   ),
                 ),
+              ],
+            ),
+          if (hasSideNavigation == false)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
                 Expanded(
                   flex: 1,
                   child: SettingsContainerOpenPage(
@@ -340,16 +315,86 @@ class MorePages extends StatelessWidget {
                 ),
                 Expanded(
                   flex: 1,
-                  child: SettingsContainerOpenPage(
-                    isOutlinedColumn: true,
-                    openPage: EditAssociatedTitlesPage(),
-                    title: navBarIconsData["titlesDetails"]!.label.tr(),
-                    icon: navBarIconsData["titlesDetails"]!.iconData,
-                    isOutlined: true,
-                  ),
-                )
+                  child: SizedBox.shrink(),
+                ),
               ],
             ),
+          
+          // SECTION 6 — SUPPORT (Feedback, Privacy Policy)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                      vertical: 5, horizontal: 4),
+                  child: SettingsContainer(
+                    onTap: () {
+                      openBottomSheet(context, RatingPopup(), fullSnap: true);
+                    },
+                    title: "feedback".tr(),
+                    icon: appStateSettings["outlinedIcons"]
+                        ? Icons.rate_review_outlined
+                        : Icons.rate_review_rounded,
+                    isOutlined: true,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                      vertical: 5, horizontal: 4),
+                  child: SettingsContainer(
+                    onTap: () {
+                      openUrl("https://cashewapp.web.app/privacy.html");
+                    },
+                    title: "Privacy Policy",
+                    icon: appStateSettings["outlinedIcons"]
+                        ? Icons.privacy_tip_outlined
+                        : Icons.privacy_tip_rounded,
+                    isOutlined: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // SECTION 7 — LEGAL & ACCOUNT (Delete Account)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                      vertical: 5, horizontal: 4),
+                  child: SettingsContainer(
+                    onTap: () {
+                      openPopup(
+                        context,
+                        icon: Icons.warning_rounded,
+                        title: "Delete Account",
+                        description: "This action cannot be undone. Are you sure you want to delete your account?",
+                        onCancel: () {
+                          popRoute(context);
+                        },
+                        onCancelLabel: "Cancel",
+                        onSubmit: () {
+                          // Add delete account logic here
+                          popRoute(context);
+                        },
+                        onSubmitLabel: "Delete",
+                      );
+                    },
+                    title: "Delete Account",
+                    icon: Icons.delete_forever_rounded,
+                    isOutlined: true,
+                  ),
+                ),
+              ),
+              Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+          
           if (hasSideNavigation) SettingsPageContent(),
         ],
       ),
@@ -1799,6 +1844,86 @@ class FirstDayOfWeekSetting extends StatelessWidget {
         if (item == "0") return weekDayNames[0];
         if (item == "1") return weekDayNames[1];
       },
+    );
+  }
+}
+
+// Custom wrapper for GoogleAccountLoginButton to display in column layout
+class _LoginButtonColumn extends StatefulWidget {
+  const _LoginButtonColumn({Key? key}) : super(key: key);
+
+  @override
+  State<_LoginButtonColumn> createState() => _LoginButtonColumnState();
+}
+
+class _LoginButtonColumnState extends State<_LoginButtonColumn> {
+  void loginWithSync() {
+    signInAndSync(
+      context,
+      next: () {
+        setState(() {});
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String loginLabel = googleUser == null ? "Login" : "Account";
+    IconData loginIcon = googleUser == null
+        ? (appStateSettings["outlinedIcons"]
+            ? Icons.login_outlined
+            : Icons.login_rounded)
+        : (appStateSettings["outlinedIcons"]
+            ? Icons.account_circle_outlined
+            : Icons.account_circle_rounded);
+
+    return Tappable(
+      onTap: () {
+        if (googleUser == null) {
+          loginWithSync();
+        } else {
+          pushRoute(
+            context,
+            AccountsPage(),
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: (appStateSettings["materialYou"]
+                ? Theme.of(context).colorScheme.secondary.withOpacity(0.5)
+                : getColor(context, "lightDarkAccentHeavy")),
+            width: 2,
+          ),
+          borderRadius: BorderRadiusDirectional.circular(10),
+        ),
+        padding: EdgeInsetsDirectional.only(
+          start: 3,
+          end: 3,
+          top: 14,
+          bottom: 14,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              loginIcon,
+              size: 30,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+            SizedBox(height: 10),
+            TextFont(
+              text: loginLabel,
+              fontSize: 13,
+              textColor: getColor(context, "black").withOpacity(0.8),
+              maxLines: 2,
+              autoSizeText: true,
+              textAlign: TextAlign.center,
+            )
+          ],
+        ),
+      ),
     );
   }
 }

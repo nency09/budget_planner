@@ -1,4 +1,5 @@
 import 'package:budget/ai/models/ai_advice.dart';
+import 'package:budget/ai/services/ai_chat_service.dart' as chat;
 import 'package:budget/ai/services/ai_engine.dart';
 import 'package:budget/database/tables.dart';
 import 'package:budget/struct/currencyFunctions.dart';
@@ -17,24 +18,35 @@ class AIChatPage extends StatefulWidget {
 
 class _AIChatPageState extends State<AIChatPage> {
   final AIEngine _engine = AIEngine();
+  final chat.AIChatService _chatService = chat.AIChatService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   FinancialContext? _financialContext;
+  int? _currentSessionId;
+  List<chat.ChatSession> _sessions = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _loadFinancialContext();
-    _addWelcomeMessage();
+    _initializeChatPage();
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeChatPage() async {
+    await _loadFinancialContext();
+    await _startNewChatSession();
+    await _refreshSessions();
   }
 
   Future<void> _loadFinancialContext() async {
@@ -117,6 +129,46 @@ class _AIChatPageState extends State<AIChatPage> {
     ));
   }
 
+  /// Start a brand new chat session (like ChatGPT "New Chat").
+  Future<void> _startNewChatSession() async {
+    final newId = await _chatService.createSession();
+    if (!mounted) return;
+    setState(() {
+      _currentSessionId = newId;
+      _messages
+        ..clear();
+      _addWelcomeMessage();
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _refreshSessions() async {
+    final sessions = await _chatService.getSessions();
+    if (!mounted) return;
+    setState(() {
+      _sessions = sessions;
+    });
+  }
+
+  /// Load an existing chat session and display its messages.
+  Future<void> _openSession(chat.ChatSession session) async {
+    final messages = await _chatService.getMessages(session.id);
+    if (!mounted) return;
+    setState(() {
+      _currentSessionId = session.id;
+      _messages
+        ..clear()
+        ..addAll(messages.map(
+          (m) => ChatMessage(
+            text: m.message,
+            isUser: m.role == 'user',
+            timestamp: m.timestamp,
+          ),
+        ));
+    });
+    _scrollToBottom();
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -131,19 +183,23 @@ class _AIChatPageState extends State<AIChatPage> {
       return;
     }
 
-    // Add user message
-    setState(() {
-      _messages.add(ChatMessage(
-        text: text,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
-      _isLoading = true;
-    });
-    _messageController.clear();
-    _scrollToBottom();
-
     try {
+      // Each open AI Money Coach screen should already have a session, but
+      // defensively create one if it's missing.
+      _currentSessionId ??= await _chatService.createSession();
+
+      // Show user message immediately in UI (AIChatService will persist it).
+      setState(() {
+        _messages.add(ChatMessage(
+          text: text,
+          isUser: true,
+          timestamp: DateTime.now(),
+        ));
+        _isLoading = true;
+      });
+      _messageController.clear();
+      _scrollToBottom();
+
       // Get or use cached financial context
       if (_financialContext == null) {
         await _loadFinancialContext();
@@ -152,49 +208,37 @@ class _AIChatPageState extends State<AIChatPage> {
       final allWallets = Provider.of<AllWallets>(this.context, listen: false);
       final fallbackCurrencySymbol = getCurrencyString(allWallets);
 
-      final context = _financialContext ?? FinancialContext(
+      // Keep financial context up to date, but actual AI prompt building happens
+      // inside AIChatService using a compact FinancialSummary.
+      _financialContext ??= FinancialContext(
         monthlyIncome: 0,
         monthlyExpenses: 0,
         topCategories: [],
         currency: fallbackCurrencySymbol,
       );
 
-      // Build conversation history
-      final conversationHistory = _messages
-          .where((m) => m.isUser || !m.isUser)
-          .take(10) // Last 10 messages
-          .map((m) => {
-                'role': m.isUser ? 'user' : 'assistant',
-                'content': m.text,
-              })
-          .toList();
-
-      // Call AI
-      final response = await _engine.answerUserQuery(
-        query: text,
-        context: context,
-        conversationHistory: conversationHistory,
+      // Call AI via session-based chat service (persists assistant reply)
+      final response = await _chatService.sendMessage(
+        sessionId: _currentSessionId!,
+        userMessage: text,
       );
 
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (response != null && response.isNotEmpty) {
-            _messages.add(ChatMessage(
-              text: response,
-              isUser: false,
-              timestamp: DateTime.now(),
-            ));
-          } else {
-            _messages.add(ChatMessage(
-              text: 'Sorry, I couldn\'t generate a response. Please try again.',
-              isUser: false,
-              timestamp: DateTime.now(),
-            ));
-          }
+          _messages.add(ChatMessage(
+            text: response.isNotEmpty
+                ? response
+                : 'Sorry, I couldn\'t generate a response. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ));
         });
         _scrollToBottom();
       }
+
+      // Update history list (titles and previews may have changed)
+      await _refreshSessions();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -224,12 +268,144 @@ class _AIChatPageState extends State<AIChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredSessions = _sessions.where((s) {
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      return s.title.toLowerCase().contains(q) ||
+          (s.lastMessagePreview ?? '').toLowerCase().contains(q);
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('AI Money Coach'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+        title: const Text('AI Money Coach'),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: _isLoading
+                ? null
+                : () async {
+                    await _startNewChatSession();
+                    await _refreshSessions();
+                  },
+            icon: const Icon(Icons.add),
+            label: const Text('New Chat'),
+          ),
+        ],
+      ),
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Chat History',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search conversations',
+                    prefixIcon: Icon(Icons.search, size: 18),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: filteredSessions.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No conversations yet',
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: filteredSessions.length,
+                        itemBuilder: (context, index) {
+                          final session = filteredSessions[index];
+                          final isActive = session.id == _currentSessionId;
+                          return ListTile(
+                            selected: isActive,
+                            leading: Icon(
+                              Icons.chat_bubble_outline,
+                              size: 20,
+                            ),
+                            title: Text(
+                              session.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: session.lastMessagePreview != null
+                                ? Text(
+                                    session.lastMessagePreview!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : null,
+                            onTap: _isLoading
+                                ? null
+                                : () async {
+                                    Navigator.of(context).pop(); // close drawer
+                                    await _openSession(session);
+                                  },
+                          );
+                        },
+                      ),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      child: Icon(Icons.person, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'AI Money Coach',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       body: Column(
