@@ -115,10 +115,7 @@ class MoreActionsPageState extends State<MoreActionsPage> {
           ),
         ],
         listWidgets: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(bottom: 8.0),
-            child: PremiumBanner(),
-          ),
+          // REMOVED: PremiumBanner() - Pro button is now in top row
           MorePages()
         ],
       );
@@ -222,7 +219,7 @@ class MorePages extends StatelessWidget {
               ],
             ),
           
-          // SECTION 4 — FINANCIAL PLANNING (Goals, Loans, Scheduled)
+          // SECTION 4 — FINANCIAL PLANNING (Goals, Loans, Scheduled, Feedback)
           if (hasSideNavigation == false)
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -260,86 +257,76 @@ class MorePages extends StatelessWidget {
                     isOutlined: true,
                   ),
                 ),
-                Expanded(child: SizedBox.shrink()),
-              ],
-            ),
-          
-          // SECTION 5 — MONEY MANAGEMENT (Accounts, Budgets, Categories)
-          if (hasSideNavigation == false)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
                 Expanded(
-                  flex: 1,
-                  child: SettingsContainerOpenPage(
-                    isOutlinedColumn: true,
-                    openPage: EditWalletsPage(),
-                    title: navBarIconsData["accountDetails"]!.label.tr(),
-                    icon: navBarIconsData["accountDetails"]!.iconData,
-                    isOutlined: true,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.symmetric(
+                        vertical: 5, horizontal: 4),
+                    child: SettingsContainer(
+                      onTap: () {
+                        openBottomSheet(context, RatingPopup(), fullSnap: true);
+                      },
+                      title: "feedback".tr(),
+                      icon: appStateSettings["outlinedIcons"]
+                          ? Icons.rate_review_outlined
+                          : Icons.rate_review_rounded,
+                      isOutlined: true,
+                    ),
                   ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: SettingsContainerOpenPage(
-                    isOutlinedColumn: true,
-                    openPage: appStateSettings["customNavBarShortcut0"] !=
-                                "budgets" &&
-                            appStateSettings["customNavBarShortcut1"] !=
-                                "budgets" &&
-                            appStateSettings["customNavBarShortcut2"] !=
-                                "budgets"
-                        ? BudgetsListPage(enableBackButton: true)
-                        : EditBudgetPage(),
-                    title: navBarIconsData["budgetDetails"]!.label.tr(),
-                    icon: navBarIconsData["budgetDetails"]!.iconData,
-                    iconScale: navBarIconsData["budgetDetails"]!.iconScale,
-                    isOutlined: true,
-                  ),
-                ),
-              ],
-            ),
-          if (hasSideNavigation == false)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  flex: 1,
-                  child: SettingsContainerOpenPage(
-                    isOutlinedColumn: true,
-                    openPage: EditCategoriesPage(),
-                    title: navBarIconsData["categoriesDetails"]!.label.tr(),
-                    icon: navBarIconsData["categoriesDetails"]!.iconData,
-                    isOutlined: true,
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: SizedBox.shrink(),
                 ),
               ],
             ),
           
-          // SECTION 6 — SUPPORT (Feedback, Privacy Policy)
+          // SECTION 5 — MONEY MANAGEMENT (Accounts, Budgets, Categories in one row)
+          if (hasSideNavigation == false)
+            Padding(
+              padding: const EdgeInsetsDirectional.symmetric(vertical: 5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SettingsContainerOpenPage(
+                      isOutlinedColumn: true,
+                      openPage: EditWalletsPage(),
+                      title: navBarIconsData["accountDetails"]!.label.tr(),
+                      icon: navBarIconsData["accountDetails"]!.iconData,
+                      isOutlined: true,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: SettingsContainerOpenPage(
+                      isOutlinedColumn: true,
+                      openPage: appStateSettings["customNavBarShortcut0"] !=
+                                  "budgets" &&
+                              appStateSettings["customNavBarShortcut1"] !=
+                                  "budgets" &&
+                              appStateSettings["customNavBarShortcut2"] !=
+                                  "budgets"
+                          ? BudgetsListPage(enableBackButton: true)
+                          : EditBudgetPage(),
+                      title: navBarIconsData["budgetDetails"]!.label.tr(),
+                      icon: navBarIconsData["budgetDetails"]!.iconData,
+                      iconScale: navBarIconsData["budgetDetails"]!.iconScale,
+                      isOutlined: true,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: SettingsContainerOpenPage(
+                      isOutlinedColumn: true,
+                      openPage: EditCategoriesPage(),
+                      title: navBarIconsData["categoriesDetails"]!.label.tr(),
+                      icon: navBarIconsData["categoriesDetails"]!.iconData,
+                      isOutlined: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          // SECTION 6 — SUPPORT (Privacy Policy & Delete Account)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsetsDirectional.symmetric(
-                      vertical: 5, horizontal: 4),
-                  child: SettingsContainer(
-                    onTap: () {
-                      openBottomSheet(context, RatingPopup(), fullSnap: true);
-                    },
-                    title: "feedback".tr(),
-                    icon: appStateSettings["outlinedIcons"]
-                        ? Icons.rate_review_outlined
-                        : Icons.rate_review_rounded,
-                    isOutlined: true,
-                  ),
-                ),
-              ),
               Expanded(
                 child: Padding(
                   padding: EdgeInsetsDirectional.symmetric(
@@ -356,13 +343,6 @@ class MorePages extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
-          ),
-          
-          // SECTION 7 — LEGAL & ACCOUNT (Delete Account)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
               Expanded(
                 child: Padding(
                   padding: EdgeInsetsDirectional.symmetric(
@@ -391,7 +371,6 @@ class MorePages extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(child: SizedBox.shrink()),
             ],
           ),
           

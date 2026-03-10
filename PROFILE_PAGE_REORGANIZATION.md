@@ -7,11 +7,9 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 
 ### SECTION 1 — PRO + SETTINGS + LOGIN (TOP SECTION)
 **Components:**
-- Cashew Pro Banner (existing, shown at top via PageFramework)
 - Pro, Settings, Login (horizontal row of 3 equal-width buttons)
 
 **Layout:** 
-- Banner at top (full-width)
 - Single horizontal row with 3 columns:
   - Pro (opens Premium page)
   - Settings (opens Settings page)
@@ -23,6 +21,8 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 - 8px spacing between buttons
 - Outlined card style with rounded corners
 - Icons and text centered vertically
+
+**Note:** Removed duplicate Cashew Pro banner - Pro button in top row is sufficient
 
 ### SECTION 2 — ASK ANY QUESTION
 **Components:**
@@ -46,8 +46,9 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 - Goals
 - Loans
 - Scheduled
+- Feedback (moved from Support section)
 
-**Layout:** 2-column grid (2 rows, with second row having only 1 item)
+**Layout:** 2-column grid (2 rows × 2 columns)
 
 ### SECTION 5 — MONEY MANAGEMENT
 **Components:**
@@ -55,14 +56,13 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 - Budgets
 - Categories
 
-**Layout:** 2-column grid (2 rows, with second row having only 1 item)
+**Layout:** Single horizontal row with 3 equal-width buttons (column style with icon above text, 8px spacing between items)
 
 ### SECTION 6 — SUPPORT
 **Components:**
-- Feedback
-- Privacy Policy (new, opens https://cashewapp.web.app/privacy.html)
+- Privacy Policy (opens https://cashewapp.web.app/privacy.html)
 
-**Layout:** 2-column grid (1 row × 2 columns)
+**Layout:** Single item (left-aligned in 2-column grid)
 
 ### SECTION 7 — LEGAL & ACCOUNT
 **Components:**
@@ -85,12 +85,15 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 
 ### Reorganized Components:
 1. **Pro, Settings, Login** displayed in single horizontal row at top (Section 1)
-2. Grouped **Goals, Loans, Scheduled** together in Section 4
-3. Grouped **Accounts, Budgets, Categories** together in Section 5
-4. Created dedicated **Support** section (Section 6)
-5. Created dedicated **Legal & Account** section (Section 7)
+2. **Removed duplicate Cashew Pro banner** - Pro button in top row is sufficient
+3. **Moved Feedback** from Support section to Financial Planning section (Section 4)
+4. **Accounts, Budgets, Categories** displayed in single horizontal row (Section 5)
+5. Grouped **Goals, Loans, Scheduled, Feedback** together in Section 4
+6. Created dedicated **Support** section with only Privacy Policy (Section 6)
+7. Created dedicated **Legal & Account** section (Section 7)
 
 ### Removed from Main View:
+- **Duplicate Cashew Pro banner** - Removed to avoid duplication with Pro button
 - **Subscriptions** - Removed from profile page
 - **Titles (Associated Titles)** - Removed from profile page
 - **About Cashew (Licenses)** - Removed from profile page
@@ -136,10 +139,10 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 
 ## Testing Checklist
 
-- [ ] Cashew Pro banner displays at top
-- [ ] Pro, Settings, and Login buttons display in single horizontal row
+- [ ] No duplicate Cashew Pro banner/card
+- [ ] Pro, Settings, and Login buttons display in single horizontal row at top
 - [ ] All three top buttons have equal width
-- [ ] Icons display above text in each button
+- [ ] Icons display above text in top row buttons
 - [ ] 8px spacing between top row buttons
 - [ ] Pro button opens Premium page
 - [ ] Settings button opens Settings page
@@ -152,11 +155,15 @@ The Profile / More Actions page has been reorganized into 7 logical sections for
 - [ ] Goals opens objectives list
 - [ ] Loans opens credit/debt transactions
 - [ ] Scheduled opens upcoming/overdue transactions
+- [ ] Feedback appears next to Scheduled in Financial Planning section
+- [ ] Feedback opens rating popup
+- [ ] Accounts, Budgets, Categories display in single horizontal row
+- [ ] All three Money Management buttons have equal width
+- [ ] 8px spacing between Money Management buttons
 - [ ] Accounts opens edit wallets page
 - [ ] Budgets opens budget page
 - [ ] Categories opens edit categories page
-- [ ] Feedback opens rating popup
-- [ ] Privacy Policy opens privacy URL
+- [ ] Privacy Policy opens privacy URL (only item in Support section)
 - [ ] Delete Account shows confirmation popup
 - [ ] Dark theme works correctly
 - [ ] Page is scrollable
