@@ -153,6 +153,18 @@ class AIChatService {
         .toList();
   }
 
+  /// Delete a chat session and all its associated messages.
+  /// 
+  /// The database schema has ON DELETE CASCADE for messages, so deleting
+  /// the session will automatically delete all related messages.
+  Future<void> deleteSession(int sessionId) async {
+    await (database.delete(database.aIChatSessions)
+          ..where((tbl) => tbl.id.equals(sessionId)))
+        .go();
+    
+    debugPrint('🗑️ AIChatService: Deleted session #$sessionId and all its messages');
+  }
+
   // ---------------------------------------------------------------------------
   // Sending messages to Groq
   // ---------------------------------------------------------------------------

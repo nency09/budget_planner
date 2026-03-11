@@ -183,16 +183,16 @@ class BottomNavBarState extends State<BottomNavBar> {
               return TextStyle(
                 fontFamily: appStateSettings["font"],
                 fontFamilyFallback: ['Inter'],
-                fontSize: 13,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
-                overflow: TextOverflow.clip,
+                overflow: TextOverflow.ellipsis,
               );
             } else {
               return TextStyle(
                 fontFamily: appStateSettings["font"],
                 fontFamilyFallback: ['Inter'],
-                fontSize: 13,
-                overflow: TextOverflow.clip,
+                fontSize: 11,
+                overflow: TextOverflow.ellipsis,
               );
             }
           }),
@@ -208,7 +208,7 @@ class BottomNavBarState extends State<BottomNavBar> {
             ),
             NavigationDestination(
               icon: Icon(navBarIconsData["transactions"]!.iconData),
-              label: navBarIconsData["transactions"]!.label.tr(),
+              label: "Transactions",
               tooltip: "",
             ),
             NavigationDestination(
@@ -218,7 +218,7 @@ class BottomNavBarState extends State<BottomNavBar> {
             ),
             NavigationDestination(
               icon: Icon(navBarIconsData["subscriptions"]!.iconData),
-              label: navBarIconsData["subscriptions"]!.label.tr(),
+              label: "Subs",
               tooltip: "",
             ),
             NavigationDestination(

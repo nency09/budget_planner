@@ -58,6 +58,7 @@ import 'package:provider/provider.dart';
 import 'package:budget/functions.dart';
 import 'package:budget/struct/settings.dart';
 import 'package:budget/widgets/framework/popupFramework.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:budget/widgets/outlinedButtonStacked.dart';
 
@@ -323,7 +324,7 @@ class MorePages extends StatelessWidget {
               ),
             ),
           
-          // SECTION 6 — SUPPORT (Privacy Policy & Delete Account)
+          // SECTION 6 — SUPPORT (Privacy Policy & Invite Friends)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -348,25 +349,16 @@ class MorePages extends StatelessWidget {
                   padding: EdgeInsetsDirectional.symmetric(
                       vertical: 5, horizontal: 4),
                   child: SettingsContainer(
-                    onTap: () {
-                      openPopup(
-                        context,
-                        icon: Icons.warning_rounded,
-                        title: "Delete Account",
-                        description: "This action cannot be undone. Are you sure you want to delete your account?",
-                        onCancel: () {
-                          popRoute(context);
-                        },
-                        onCancelLabel: "Cancel",
-                        onSubmit: () {
-                          // Add delete account logic here
-                          popRoute(context);
-                        },
-                        onSubmitLabel: "Delete",
+                    onTap: () async {
+                      await Share.share(
+                        'I am using this AI Money Manager app to track my expenses. Try it here: https://cashewapp.web.app',
+                        subject: 'Check out this AI Money Manager app!',
                       );
                     },
-                    title: "Delete Account",
-                    icon: Icons.delete_forever_rounded,
+                    title: "Invite Friends",
+                    icon: appStateSettings["outlinedIcons"]
+                        ? Icons.share_outlined
+                        : Icons.share_rounded,
                     isOutlined: true,
                   ),
                 ),
@@ -645,6 +637,31 @@ class SettingsPageContent extends StatelessWidget {
         GoogleAccountLoginButton(
           isOutlinedButton: false,
           forceButtonName: "google-drive".tr(),
+        ),
+
+        SettingsHeader(title: "account".tr()),
+
+        SettingsContainer(
+          title: "Delete Account",
+          description: "Permanently delete your account and all data",
+          icon: Icons.delete_forever_rounded,
+          onTap: () {
+            openPopup(
+              context,
+              icon: Icons.warning_rounded,
+              title: "Delete Account",
+              description: "This action cannot be undone. Are you sure you want to delete your account and all associated data?",
+              onCancel: () {
+                popRoute(context);
+              },
+              onCancelLabel: "Cancel",
+              onSubmit: () {
+                // Add delete account logic here
+                popRoute(context);
+              },
+              onSubmitLabel: "Delete",
+            );
+          },
         ),
       ],
     );

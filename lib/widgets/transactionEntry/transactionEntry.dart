@@ -681,7 +681,13 @@ class TransactionEntry extends StatelessWidget {
                               selectTransaction(transaction, selected, true);
                             },
                             onTap: () async {
-                              openContainer();
+                              // If selection mode is active, toggle selection on tap
+                              if (areTransactionsBeingSelected == true) {
+                                selectTransaction(transaction, selected, false);
+                              } else {
+                                // Otherwise, open the transaction details
+                                openContainer();
+                              }
                             },
                             child: AnimatedContainer(
                               clipBehavior: Clip.none,

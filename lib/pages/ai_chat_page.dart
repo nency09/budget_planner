@@ -169,6 +169,71 @@ class _AIChatPageState extends State<AIChatPage> {
     _scrollToBottom();
   }
 
+  /// Show delete confirmation dialog for a chat session.
+  Future<void> _showDeleteDialog(chat.ChatSession session) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete chat?'),
+        content: Text(
+          'Are you sure you want to delete "${session.title}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteSession(session);
+    }
+  }
+
+  /// Delete a chat session and update the UI.
+  Future<void> _deleteSession(chat.ChatSession session) async {
+    try {
+      await _chatService.deleteSession(session.id);
+      
+      // If the deleted session was the current one, start a new session
+      if (session.id == _currentSessionId) {
+        await _startNewChatSession();
+      }
+      
+      // Refresh the sessions list
+      await _refreshSessions();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chat deleted'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error deleting session: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete chat'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -378,6 +443,9 @@ class _AIChatPageState extends State<AIChatPage> {
                                     Navigator.of(context).pop(); // close drawer
                                     await _openSession(session);
                                   },
+                            onLongPress: () async {
+                              await _showDeleteDialog(session);
+                            },
                           );
                         },
                       ),
