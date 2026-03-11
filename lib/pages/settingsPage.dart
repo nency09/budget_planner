@@ -334,7 +334,7 @@ class MorePages extends StatelessWidget {
                       vertical: 5, horizontal: 4),
                   child: SettingsContainer(
                     onTap: () {
-                      openUrl("https://cashewapp.web.app/privacy.html");
+                      openUrl("https://vurlex.in/privacy.html");
                     },
                     title: "Privacy Policy",
                     icon: appStateSettings["outlinedIcons"]
@@ -351,7 +351,7 @@ class MorePages extends StatelessWidget {
                   child: SettingsContainer(
                     onTap: () async {
                       await Share.share(
-                        'I am using this AI Money Manager app to track my expenses. Try it here: https://cashewapp.web.app',
+                        'I am using this AI Money Manager app to track my expenses. Try it here: https://vurlex.in/',
                         subject: 'Check out this AI Money Manager app!',
                       );
                     },
