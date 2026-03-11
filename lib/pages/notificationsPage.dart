@@ -1,6 +1,7 @@
 import 'package:budget/struct/settings.dart';
 import 'package:budget/widgets/animatedExpanded.dart';
 import 'package:budget/widgets/notificationsSettings.dart';
+import 'package:budget/widgets/smartNotificationsSettings.dart';
 import 'package:budget/widgets/framework/pageFramework.dart';
 import 'package:budget/widgets/statusBox.dart';
 import 'package:budget/widgets/util/onAppResume.dart';
@@ -65,7 +66,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             child: Column(
               children: [
                 DailyNotificationsSettings(),
-                UpcomingTransactionsNotificationsSettings()
+                UpcomingTransactionsNotificationsSettings(),
+                const SizedBox(height: 20),
+                SmartNotificationsSettings(),
               ],
             ),
           )

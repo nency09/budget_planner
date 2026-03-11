@@ -40,6 +40,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'ai/services/ai_engine.dart';
 import 'ai/services/groq_ai_service.dart';
+import 'services/smart_notifications_service.dart';
 
 // Requires hot restart when changed
 const bool enableDevicePreview = false;
@@ -167,6 +168,15 @@ Future<void> _initializeApp() async {
     iconObjects.sort((a, b) => (a.mostLikelyCategoryName ?? a.icon)
         .compareTo((b.mostLikelyCategoryName ?? b.icon)));
     debugPrint('Icon objects sorted');
+
+    // Initialize Smart Notifications
+    debugPrint('Initializing Smart Notifications...');
+    try {
+      await SmartNotificationsService().initializeSmartNotifications();
+      debugPrint('Smart Notifications initialized');
+    } catch (e) {
+      debugPrint('Error initializing Smart Notifications: $e');
+    }
 
     // Configure AI engine - Prioritizes Groq (free, no quota issues), falls back to Gemini
     try {

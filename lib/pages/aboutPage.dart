@@ -855,14 +855,6 @@ class AboutLinks extends StatelessWidget {
             _buildTappable(
               context: context,
               isExternalLink: true,
-              onTap: () => openUrl("https://github.com/jameskokoska/Cashew"),
-              icon: MoreIcons.github,
-              text: "app-is-open-source".tr(namedArgs: {"app": globalAppName}),
-            ),
-            const HorizontalBreak(padding: EdgeInsetsDirectional.zero),
-            _buildTappable(
-              context: context,
-              isExternalLink: true,
               onTap: () => openUrl("https://vurlex.in/faq.html"),
               icon: appStateSettings["outlinedIcons"]
                   ? Icons.live_help_outlined
@@ -992,8 +984,7 @@ class AboutDeepLinking extends StatelessWidget {
     return AboutInfoBox(
       title: "deep-linking".tr(),
       showLink: false,
-      link:
-          "https://github.com/jameskokoska/Cashew?tab=readme-ov-file#app-links",
+      link: "https://vurlex.in/",
       list: [
         "deep-linking-description".tr(),
       ],

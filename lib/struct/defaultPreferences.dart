@@ -152,6 +152,19 @@ Future<Map<String, dynamic>> getDefaultPreferences() async {
     "notificationsReminderType": ReminderNotificationType.IfAppNotOpened.index,
     "appOpenedHour": DateTime.now().hour,
     "appOpenedMinute": DateTime.now().minute,
+    // Smart Notifications Settings
+    "weeklyInsights": true,
+    "savingsOpportunities": true,
+    "goalReminders": true,
+    "budgetAlerts": true,
+    "transactionInsights": true,
+    "subscriptionReminders": true,
+    "quietHoursStart": 22, // 10 PM
+    "quietHoursEnd": 8, // 8 AM
+    "lastWeeklySummary": null,
+    "lastSavingsOpportunity": null,
+    "lastBudgetWarning": null,
+    "lastReactivation": null,
     "materialYou": supportsSystemColor(),
     "colorTintCategoryIcon": false,
     "sendTransactionsToServerQueue": {},

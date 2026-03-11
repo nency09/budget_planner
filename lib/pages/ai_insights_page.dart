@@ -152,7 +152,6 @@ class AIInsightsPageState extends State<AIInsightsPage>
   }
 
   Widget _buildHeader(BuildContext context) {
-    final isConfigured = _engine.isConfigured;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -204,42 +203,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // API Status Indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isConfigured
-                  ? Colors.green.withValues(alpha: 0.1)
-                  : Colors.orange.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isConfigured ? Colors.green : Colors.orange,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isConfigured ? Icons.check_circle : Icons.warning,
-                  size: 16,
-                  color: isConfigured ? Colors.green : Colors.orange,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isConfigured
-                      ? 'API Connected (${_engine.providerName})'
-                      : 'API Not Configured',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: isConfigured ? Colors.green : Colors.orange,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Removed API status badge (icon + text) as per request.
         ],
       ),
     );
