@@ -135,48 +135,93 @@ class MorePages extends StatelessWidget {
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 4),
       child: Column(
         children: [
-          // SECTION 1 — PRO + SETTINGS + LOGIN (TOP SECTION - HORIZONTAL ROW)
+          // SECTION 1 — PRO + SETTINGS + LOGIN (TOP SECTION)
           if (hasSideNavigation == false)
-            Padding(
-              padding: const EdgeInsetsDirectional.symmetric(vertical: 5),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SettingsContainerOpenPage(
-                      isOutlinedColumn: true,
-                      openPage: const PremiumPage(
+            Column(
+              children: [
+                // Pro as a full‑width highlighted card
+                Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                      vertical: 5, horizontal: 4),
+                  child: SettingsContainerOpenPage(
+                    isOutlinedColumn: true,
+                    openPage: const PremiumPage(
                         // When a purchase succeeds, close the premium page.
-                        popRouteWithPurchase: true,
+                        popRouteWithPurchase: true),
+                    title: "FinGenie",
+                    description: "Budget like a pro with FinGenie Pro",
+                    icon: appStateSettings["outlinedIcons"]
+                        ? Icons.workspace_premium_outlined
+                        : Icons.workspace_premium_rounded,
+                    isOutlined: false,
+                    isWideOutlined: true,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withOpacity(0.08),
+                    afterWidget: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                      title: "Pro",
-                      icon: appStateSettings["outlinedIcons"]
-                          ? Icons.star_outline
-                          : Icons.star_rounded,
-                      isOutlined: true,
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: SettingsContainerOpenPage(
-                      isOutlinedColumn: true,
-                      openPage: SettingsPageFramework(
-                        key: settingsPageFrameworkStateKey,
+                      child: TextFont(
+                        text: "Pro",
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        textColor: getColor(context, "canvas"),
                       ),
-                      title: "Settings",
-                      icon: navBarIconsData["settings"]!.iconData,
-                      isOutlined: true,
                     ),
                   ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: _LoginButtonColumn(
-                      key: settingsGoogleAccountLoginButtonKey,
-                    ),
+                ),
+                // Settings + Login side by side under Pro
+                Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SettingsContainerOpenPage(
+                          isOutlinedColumn: true,
+                          openPage: SettingsPageFramework(
+                            key: settingsPageFrameworkStateKey,
+                          ),
+                          title: "Settings",
+                          icon: navBarIconsData["settings"]!.iconData,
+                          isOutlined: true,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: _LoginButtonColumn(
+                          key: settingsGoogleAccountLoginButtonKey,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           
+          // LABEL — QUICK ACTIONS
+          if (hasSideNavigation == false)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding:
+                    const EdgeInsetsDirectional.only(top: 4, start: 8, end: 8),
+                child: TextFont(
+                  text: "Quick Actions",
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  textColor: getColor(context, "textLight"),
+                ),
+              ),
+            ),
+
           // SECTION 2 — ASK ANY QUESTION
           if (hasSideNavigation == false)
             Row(
@@ -221,6 +266,20 @@ class MorePages extends StatelessWidget {
             ),
           
           // SECTION 4 — FINANCIAL PLANNING (Goals, Loans, Scheduled, Feedback)
+          if (hasSideNavigation == false)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding:
+                    const EdgeInsetsDirectional.only(top: 16, start: 8, end: 8),
+                child: TextFont(
+                  text: "Financial Planning",
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  textColor: getColor(context, "textLight"),
+                ),
+              ),
+            ),
           if (hasSideNavigation == false)
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -279,6 +338,20 @@ class MorePages extends StatelessWidget {
           
           // SECTION 5 — MONEY MANAGEMENT (Accounts, Budgets, Categories in one row)
           if (hasSideNavigation == false)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding:
+                    const EdgeInsetsDirectional.only(top: 16, start: 8, end: 8),
+                child: TextFont(
+                  text: "Manage",
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  textColor: getColor(context, "textLight"),
+                ),
+              ),
+            ),
+          if (hasSideNavigation == false)
             Padding(
               padding: const EdgeInsetsDirectional.symmetric(vertical: 5),
               child: Row(
@@ -325,6 +398,19 @@ class MorePages extends StatelessWidget {
             ),
           
           // SECTION 6 — SUPPORT (Privacy Policy & Invite Friends)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding:
+                  const EdgeInsetsDirectional.only(top: 16, start: 8, end: 8),
+              child: TextFont(
+                text: "Support",
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                textColor: getColor(context, "textLight"),
+              ),
+            ),
+          ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -334,7 +420,7 @@ class MorePages extends StatelessWidget {
                       vertical: 5, horizontal: 4),
                   child: SettingsContainer(
                     onTap: () {
-                      openUrl("https://vurlex.in/privacy.html");
+                      openUrl("https://fingenie.vurlex.in/policy");
                     },
                     title: "Privacy Policy",
                     icon: appStateSettings["outlinedIcons"]
@@ -351,7 +437,7 @@ class MorePages extends StatelessWidget {
                   child: SettingsContainer(
                     onTap: () async {
                       await Share.share(
-                        'I am using this AI Money Manager app to track my expenses. Try it here: https://vurlex.in/',
+                        'I am using this AI Money Manager app to track my expenses. Try it here: https://fingenie.vurlex.in/',
                         subject: 'Check out this AI Money Manager app!',
                       );
                     },
