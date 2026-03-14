@@ -362,7 +362,7 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
     MoreActionsPage(key: settingsPageStateKey), //3
   ];
   final List<Widget> pagesExtended = [
-    MoreActionsPage(), //4
+    MoreActionsPage(key: settingsPageFrameworkStateKey), //4
     SubscriptionsPage(key: subscriptionsPageStateKey), //5
     NotificationsPage(), //6
     WalletDetailsPage(
