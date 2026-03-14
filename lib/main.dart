@@ -266,6 +266,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     print("Rebuilt Material App");
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       showPerformanceOverlay: kProfileMode,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
