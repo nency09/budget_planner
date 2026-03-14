@@ -454,18 +454,24 @@ class _LineChartState extends State<_LineChart> with WidgetsBindingObserver {
       );
 
   LineChartBarData lineChartBarData(List<FlSpot> spots, int index) {
+    final baseColor = widget.colors.length > 0
+        ? lightenPastel(widget.colors[index], amount: 0.3)
+        : lightenPastel(widget.color, amount: 0.3);
+
     return LineChartBarData(
-      color: widget.colors.length > 0
-          ? lightenPastel(widget.colors[index], amount: 0.3)
-          : lightenPastel(widget.color, amount: 0.3),
+      color: baseColor,
       barWidth: 3,
       isStrokeCapRound: true,
-      dotData: FlDotData(show: false),
+      // Show small dots on the line for better readability
+      dotData: const FlDotData(
+        show: true,
+      ),
       isCurved: widget.isCurved,
       curveSmoothness:
           appStateSettings["removeZeroTransactionEntries"] ? 0.1 : 0.3,
       preventCurveOverShooting: true,
       preventCurveOvershootingThreshold: 8,
+      // Keep the existing area gradients for positive/negative regions
       aboveBarData: BarAreaData(
         applyCutOffY: true,
         cutOffY: 0,
@@ -489,10 +495,6 @@ class _LineChartState extends State<_LineChart> with WidgetsBindingObserver {
                       ((widget.maxPair.y).abs() + (widget.minPair.y).abs())
                   : -1),
         ),
-        // gradientFrom: Offset(
-        //     0,
-        //     ((widget.maxPair.y).abs()) /
-        //         ((widget.maxPair.y).abs() + (widget.minPair.y).abs())),
       ),
       belowBarData: BarAreaData(
         applyCutOffY: true,
@@ -511,10 +513,6 @@ class _LineChartState extends State<_LineChart> with WidgetsBindingObserver {
               (widget.maxPair.y).abs() /
                   ((widget.maxPair.y).abs() + (widget.minPair.y).abs())),
         ),
-        // gradientTo: Offset(
-        //     0,
-        //     ((widget.maxPair.y).abs()) /
-        //         ((widget.maxPair.y).abs() + (widget.minPair.y).abs())),
       ),
       spots: spots,
     );
