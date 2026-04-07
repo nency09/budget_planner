@@ -116,7 +116,7 @@ class _ExchangeRatesState extends State<ExchangeRates> {
       title: "exchange-rates".tr(),
       actions: [
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           tooltip: "info".tr(),
           onPressed: () {
             openPopup(

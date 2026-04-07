@@ -216,7 +216,7 @@ class PremiumPage extends StatelessWidget {
                         right: MediaQuery.viewPaddingOf(context).right,
                       ),
                       child: IconButton(
-                        padding: EdgeInsetsDirectional.all(15),
+                        padding: EdgeInsetsDirectional.all(8),
                         icon: Icon(
                           getPlatform() == PlatformOS.isIOS
                               ? appStateSettings["outlinedIcons"]

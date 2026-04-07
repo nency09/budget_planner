@@ -124,7 +124,7 @@ class _RatingPopupState extends State<RatingPopup> {
                         ? Icons.open_in_new_outlined
                         : Icons.open_in_new_rounded,
                     onTap: () async {
-                      openUrl("https://vurlex.in/faq.html");
+                      openUrl("https://fingenie.vurlex.in/faq");
                     },
                   ),
               ],

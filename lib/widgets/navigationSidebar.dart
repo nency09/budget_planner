@@ -180,7 +180,7 @@ class NavigationSidebarState extends State<NavigationSidebar> {
                                         : -0.5,
                                     curve: Curves.easeInOutCubicEmphasized,
                                     child: IconButton(
-                                      padding: EdgeInsetsDirectional.all(15),
+                                      padding: EdgeInsetsDirectional.all(8),
                                       onPressed: () {
                                         updateSettings(
                                             "expandedNavigationSidebar",

@@ -144,7 +144,7 @@ class TransactionsListPageState extends State<TransactionsListPage>
           ),
         ),
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           tooltip: "search-transactions".tr(),
           onPressed: () {
             pushRoute(context, TransactionsSearchPage());

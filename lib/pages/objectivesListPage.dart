@@ -66,7 +66,7 @@ class ObjectivesListPageState extends State<ObjectivesListPage> {
       horizontalPaddingConstrained: enableDoubleColumn(context) == false,
       actions: [
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           tooltip: "edit-goals".tr(),
           onPressed: () {
             pushRoute(
@@ -83,7 +83,7 @@ class ObjectivesListPageState extends State<ObjectivesListPage> {
         ),
         if (getIsFullScreen(context))
           IconButton(
-            padding: EdgeInsetsDirectional.all(15),
+            padding: EdgeInsetsDirectional.all(8),
             tooltip: "add-goal".tr(),
             onPressed: () {
               pushRoute(

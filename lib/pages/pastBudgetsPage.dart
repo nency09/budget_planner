@@ -304,7 +304,7 @@ class __PastBudgetsPageContentState extends State<_PastBudgetsPageContent> {
           ),
         ),
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           tooltip: "edit-budget".tr(),
           onPressed: () {
             pushRoute(

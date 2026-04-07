@@ -109,7 +109,7 @@ class SelectedTransactionsAppBar extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        padding: EdgeInsetsDirectional.all(15),
+                        padding: EdgeInsetsDirectional.all(8),
                         color: Theme.of(context).colorScheme.secondary,
                         icon: Icon(
                           getPlatform() == PlatformOS.isIOS

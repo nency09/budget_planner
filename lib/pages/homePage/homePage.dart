@@ -256,8 +256,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: ListView(
                   controller: _scrollController,
                   children: [
-                    if (useSmallBanner) SizedBox(height: 13),
-                    Row(
+                    Padding(
+                      padding: EdgeInsetsDirectional.only(top: 5),
+                      child: Row(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -274,7 +275,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         Tooltip(
                           message: "edit-home".tr(),
                           child: IconButton(
-                            padding: EdgeInsetsDirectional.all(15),
+                            padding: EdgeInsetsDirectional.all(8),
                             onPressed: () {
                               pushRoute(context, EditHomePage());
                             },
@@ -284,6 +285,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ),
                         ),
                       ],
+                    ),
                     ),
                     // Wipe all remaining pixels off - sometimes graphics artifacts are left behind
                     Container(
@@ -324,7 +326,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               ),
                             ),
                           )
-                        : SizedBox(height: 5),
+                        : SizedBox(height: 2),
                     // Not full screen
                     if (enableDoubleColumn(context) != true) ...[
                       KeepAliveClientMixin(child: HomePageRatingBox()),

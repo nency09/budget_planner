@@ -919,7 +919,7 @@ class PageFrameworkSliverAppBar extends StatelessWidget {
         return FlexibleSpaceBar(
           centerTitle: centeredTitleWithDefault,
           titlePadding:
-              EdgeInsetsDirectional.symmetric(vertical: 15, horizontal: 18),
+              EdgeInsetsDirectional.symmetric(vertical: 8, horizontal: 18),
           title: MediaQuery(
             data: MediaQuery.of(context)
                 .copyWith(textScaler: TextScaler.linear(1.0)),
@@ -928,7 +928,7 @@ class PageFrameworkSliverAppBar extends StatelessWidget {
                   ? Offset(
                       0,
                       centeredTitleSmallWithDefault
-                          ? (enableDoubleColumn(context) ? -1.3 : -3.3)
+                          ? (enableDoubleColumn(context) ? -1.0 : -2.5)
                           : 0)
                   //  Offset(0, -(1 - percent) * 40)
                   : Offset(

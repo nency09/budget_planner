@@ -221,7 +221,7 @@ class _BillSplitterState extends State<BillSplitter> {
       title: "bill-splitter".tr(),
       actions: [
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           tooltip: "info".tr(),
           onPressed: () {
             openPopup(

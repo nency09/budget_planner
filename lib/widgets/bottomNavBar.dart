@@ -450,7 +450,7 @@ class NavBarShortcutSelection extends StatelessWidget {
               infoButton: onSettings == null
                   ? null
                   : IconButton(
-                      padding: EdgeInsetsDirectional.all(15),
+                      padding: EdgeInsetsDirectional.all(8),
                       onPressed: onSettings,
                       icon: Icon(
                         appStateSettings["outlinedIcons"]
@@ -513,7 +513,7 @@ class NavBarIcon extends StatelessWidget {
                 margin: EdgeInsetsDirectional.all(5),
               ),
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           color: selected
               ? Theme.of(context).colorScheme.onSecondaryContainer
               : null,

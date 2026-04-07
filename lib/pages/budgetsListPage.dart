@@ -44,7 +44,7 @@ class BudgetsListPageState extends State<BudgetsListPage> {
       horizontalPaddingConstrained: enableDoubleColumn(context) == false,
       actions: [
         IconButton(
-          padding: EdgeInsetsDirectional.all(15),
+          padding: EdgeInsetsDirectional.all(8),
           tooltip: "edit-budgets".tr(),
           onPressed: () {
             pushRoute(
@@ -61,7 +61,7 @@ class BudgetsListPageState extends State<BudgetsListPage> {
         ),
         if (getIsFullScreen(context))
           IconButton(
-            padding: EdgeInsetsDirectional.all(15),
+            padding: EdgeInsetsDirectional.all(8),
             tooltip: "add-budget".tr(),
             onPressed: () {
               pushRoute(

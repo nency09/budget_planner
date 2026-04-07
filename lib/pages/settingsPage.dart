@@ -96,25 +96,7 @@ class MoreActionsPageState extends State<MoreActionsPage> {
         title: "more-actions".tr(),
         backButton: false,
         horizontalPaddingConstrained: true,
-        actions: [
-          CustomPopupMenuButton(
-            showButtons: true,
-            keepOutFirst: true,
-            items: [
-              if (appStateSettings["showFAQAndHelpLink"] == true)
-                DropdownItemMenu(
-                  id: "open-faq",
-                  label: "faq".tr(),
-                  icon: appStateSettings["outlinedIcons"]
-                      ? Icons.live_help_outlined
-                      : Icons.live_help_rounded,
-                  action: () {
-                    openUrl("https://cashewapp.web.app/faq.html");
-                  },
-                ),
-            ],
-          ),
-        ],
+        actions: const [],
         listWidgets: [
           // REMOVED: PremiumBanner() - Pro button is now in top row
           MorePages()
