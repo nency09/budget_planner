@@ -1,5 +1,6 @@
 import 'package:budget/struct/settings.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
+import 'package:budget/services/email_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
@@ -19,6 +20,15 @@ Future<FirebaseFirestore?> firebaseGetDBInstanceAnonymous() async {
 
 // returns null if authentication unsuccessful
 Future<FirebaseFirestore?> firebaseGetDBInstance() async {
+  // Check if user is already signed in with email/password
+  if (EmailAuthService.isEmailPasswordUser()) {
+    try {
+      return await EmailAuthService.getFirestoreInstance();
+    } catch (e) {
+      print("Error with email auth: $e");
+    }
+  }
+
   if (_credential != null) {
     try {
       await FirebaseAuth.instance.signInWithCredential(_credential!);

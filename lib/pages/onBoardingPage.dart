@@ -25,6 +25,7 @@ import 'package:budget/functions.dart';
 import 'package:budget/database/initializeDefaultDatabase.dart';
 
 import 'package:budget/widgets/pageIndicator.dart';
+import 'package:budget/pages/email_auth_page.dart';
 
 class OnBoardingPage extends StatelessWidget {
   const OnBoardingPage({
@@ -532,6 +533,26 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
                   },
                   title: "sign-in-with-google".tr(),
                   icon: MoreIcons.google,
+                  isExpanded: false,
+                ),
+          getPlatform() == PlatformOS.isIOS
+              ? SizedBox.shrink()
+              : SizedBox(height: 8),
+          getPlatform() == PlatformOS.isIOS
+              ? SizedBox.shrink()
+              : SettingsContainerOutlined(
+                  onTap: () async {
+                    final signedIn = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (context) => EmailAuthPage(),
+                      ),
+                    );
+                    if (signedIn == true) {
+                      nextNavigation();
+                    }
+                  },
+                  title: "Sign In with Email",
+                  icon: Icons.email_outlined,
                   isExpanded: false,
                 ),
           getPlatform() == PlatformOS.isIOS

@@ -3,6 +3,7 @@ import 'package:budget/functions.dart';
 import 'package:budget/main.dart';
 import 'package:budget/pages/addTransactionPage.dart';
 import 'package:budget/struct/settings.dart';
+import 'package:budget/services/email_auth_service.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
 import 'package:budget/widgets/animatedExpanded.dart';
 import 'package:budget/widgets/button.dart';
@@ -40,6 +41,18 @@ class AccountsPageState extends State<AccountsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final String signedInEmail = (appStateSettings["currentUserEmail"] ??
+            EmailAuthService.getUserEmail() ??
+            "")
+        .toString();
+    final bool isSignedIn =
+        googleUser != null || EmailAuthService.isEmailPasswordUser();
+    final String profileName = googleUser?.displayName?.isNotEmpty == true
+        ? googleUser!.displayName!
+        : signedInEmail;
+    final String profileInitial =
+        profileName.isEmpty ? "" : profileName.substring(0, 1).toUpperCase();
+
     Widget profileWidget = Container(
       width: 100,
       height: 100,
@@ -50,7 +63,7 @@ class AccountsPageState extends State<AccountsPage> {
       ),
       child: Center(
         child: TextFont(
-            text: googleUser?.displayName![0] ?? "",
+            text: profileInitial,
             fontSize: 60,
             textAlign: TextAlign.center,
             fontWeight: FontWeight.bold,
@@ -113,7 +126,7 @@ class AccountsPageState extends State<AccountsPage> {
         SliverFillRemaining(
           hasScrollBody: false,
           child: Center(
-            child: googleUser == null
+            child: !isSignedIn
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -172,15 +185,15 @@ class AccountsPageState extends State<AccountsPage> {
                       TextFont(
                         text: getPlatform() == PlatformOS.isIOS
                             ? "google-drive-backup".tr()
-                            : (googleUser?.displayName ?? "").toString(),
+                            : (googleUser?.displayName ?? signedInEmail)
+                                .toString(),
                         textAlign: TextAlign.center,
                         fontSize: 25,
                         fontWeight: FontWeight.bold,
                       ),
                       SizedBox(height: 2),
                       TextFont(
-                        text: (appStateSettings["currentUserEmail"] ?? "")
-                            .toString(),
+                        text: signedInEmail,
                         textAlign: TextAlign.center,
                         fontSize: 15,
                       ),
@@ -189,7 +202,21 @@ class AccountsPageState extends State<AccountsPage> {
                         child: Button(
                           label: "logout".tr(),
                           onTap: () async {
-                            final result = await signOutGoogle();
+                            bool result = false;
+
+                            // Check if user is signed in with email
+                            if (EmailAuthService.isEmailPasswordUser()) {
+                              try {
+                                await EmailAuthService.signOut();
+                                result = true;
+                              } catch (e) {
+                                print("Error signing out from email auth: $e");
+                              }
+                            } else {
+                              // Try Google sign out
+                              result = await signOutGoogle();
+                            }
+
                             if (result == true) {
                               if (getIsFullScreen(context) == false) {
                                 maybePopRoute(context);
@@ -350,8 +377,7 @@ class AccountsPageState extends State<AccountsPage> {
                               child: Tappable(
                                 borderRadius: 15,
                                 onTap: () {
-                                  openUrl(
-                                      "https://vurlex.in/policy.html");
+                                  openUrl("https://fingenie.vurlex.in/policy");
                                 },
                                 child: Padding(
                                   padding:

@@ -38,7 +38,7 @@ class FinanceQuestionValidator {
     '£', 'pound', 'pounds', 'gbp',
     
     // App-specific terms
-    'cashew', 'app', 'application',
+    'fingenie', 'app', 'application',
     'track', 'tracking', 'record', 'recording',
     'report', 'reports', 'analytics',
     'chart', 'charts', 'graph', 'graphs',

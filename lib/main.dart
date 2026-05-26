@@ -102,25 +102,44 @@ Future<void> _initializeApp() async {
     }
     
     debugPrint('Initializing Firebase...');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(Duration(seconds: 10), onTimeout: () {
-      debugPrint('Firebase initialization timed out');
-      throw TimeoutException('Firebase initialization timed out');
-    });
-    debugPrint('Firebase initialized');
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(Duration(seconds: 10), onTimeout: () {
+        debugPrint('Firebase initialization timed out');
+        throw TimeoutException('Firebase initialization timed out');
+      });
+      debugPrint('Firebase initialized');
+    } catch (e) {
+      if (e.toString().contains('duplicate-app')) {
+        debugPrint('Firebase already initialized, continuing...');
+      } else {
+        debugPrint('Firebase initialization error: $e');
+        rethrow;
+      }
+    }
     
     debugPrint('Initializing EasyLocalization...');
     await EasyLocalization.ensureInitialized().timeout(Duration(seconds: 5));
     debugPrint('EasyLocalization initialized');
     
     debugPrint('Getting SharedPreferences...');
-    sharedPreferences = await SharedPreferences.getInstance().timeout(Duration(seconds: 5));
-    debugPrint('SharedPreferences loaded');
+    try {
+      sharedPreferences = await SharedPreferences.getInstance().timeout(Duration(seconds: 5));
+      debugPrint('SharedPreferences loaded');
+    } catch (e) {
+      debugPrint('Error loading SharedPreferences: $e');
+      rethrow;
+    }
     
     debugPrint('Constructing database...');
-    database = await constructDb('db').timeout(Duration(seconds: 10));
-    debugPrint('Database constructed');
+    try {
+      database = await constructDb('db').timeout(Duration(seconds: 10));
+      debugPrint('Database constructed');
+    } catch (e) {
+      debugPrint('Error constructing database: $e');
+      rethrow;
+    }
     
     // NOTE: We no longer force-convert all wallets to INR here.
     // Wallets keep their original currencies (EUR, USD, INR, etc.),
