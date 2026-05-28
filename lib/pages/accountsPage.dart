@@ -482,7 +482,8 @@ class _SignInWithGoogleFlyInState extends State<SignInWithGoogleFlyIn> {
     });
   }
 
-  bool get shouldExpand => !hide && googleUser == null;
+  bool get shouldExpand =>
+      !hide && googleUser == null && !EmailAuthService.isEmailPasswordUser();
 
   @override
   Widget build(BuildContext context) {

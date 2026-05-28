@@ -7,6 +7,7 @@ import 'package:budget/functions.dart';
 import 'package:budget/main.dart';
 import 'package:budget/pages/aboutPage.dart';
 import 'package:budget/pages/accountsPage.dart';
+import 'package:budget/services/email_auth_service.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/settings.dart';
 import 'package:budget/struct/shareBudget.dart';
@@ -673,10 +674,15 @@ class GoogleAccountLoginButtonState extends State<GoogleAccountLoginButton> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSignedIn =
+        googleUser != null || EmailAuthService.isEmailPasswordUser();
+    final String accountLabel =
+        googleUser?.displayName ?? EmailAuthService.getUserEmail() ?? "Account";
+
     if (widget.navigationSidebarButton == true) {
       return AnimatedSwitcher(
         duration: Duration(milliseconds: 600),
-        child: googleUser == null
+        child: !isSignedIn
             ? getPlatform() == PlatformOS.isIOS
                 ? NavigationSidebarButton(
                     key: ValueKey("login"),
@@ -704,7 +710,7 @@ class GoogleAccountLoginButtonState extends State<GoogleAccountLoginButton> {
                   )
                 : NavigationSidebarButton(
                     key: ValueKey("user"),
-                    label: googleUser!.displayName ?? "",
+                    label: accountLabel,
                     icon: widget.forceButtonName == null
                         ? appStateSettings["outlinedIcons"]
                             ? Icons.person_outlined
@@ -716,7 +722,7 @@ class GoogleAccountLoginButtonState extends State<GoogleAccountLoginButton> {
                   ),
       );
     }
-    return googleUser == null
+    return !isSignedIn
         ? getPlatform() == PlatformOS.isIOS
             ? SettingsContainerOpenPage(
                 openPage: AccountsPage(),
@@ -750,7 +756,7 @@ class GoogleAccountLoginButtonState extends State<GoogleAccountLoginButton> {
               )
             : SettingsContainerOpenPage(
                 openPage: AccountsPage(),
-                title: widget.forceButtonName ?? googleUser!.displayName ?? "",
+                title: widget.forceButtonName ?? accountLabel,
                 icon: widget.forceButtonName == null
                     ? appStateSettings["outlinedIcons"]
                         ? Icons.person_outlined

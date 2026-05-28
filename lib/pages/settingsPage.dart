@@ -17,6 +17,7 @@ import 'package:budget/struct/currencyFunctions.dart';
 import 'package:budget/struct/defaultPreferences.dart';
 import 'package:budget/struct/languageMap.dart';
 import 'package:budget/struct/navBarIconsData.dart';
+import 'package:budget/services/email_auth_service.dart';
 import 'package:budget/widgets/animatedExpanded.dart';
 import 'package:budget/widgets/dropdownSelect.dart';
 import 'package:budget/widgets/exportDB.dart';
@@ -137,10 +138,8 @@ class MorePages extends StatelessWidget {
                         : Icons.workspace_premium_rounded,
                     isOutlined: false,
                     isWideOutlined: true,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withOpacity(0.08),
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.08),
                     afterWidget: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
@@ -187,7 +186,7 @@ class MorePages extends StatelessWidget {
                 ),
               ],
             ),
-          
+
           // LABEL — QUICK ACTIONS
           if (hasSideNavigation == false)
             Align(
@@ -227,7 +226,7 @@ class MorePages extends StatelessWidget {
                 ),
               ],
             ),
-          
+
           // SECTION 3 — SPENDING SUMMARY
           if (hasSideNavigation == false)
             Row(
@@ -246,7 +245,7 @@ class MorePages extends StatelessWidget {
                 ),
               ],
             ),
-          
+
           // SECTION 4 — FINANCIAL PLANNING (Goals, Loans, Scheduled, Feedback)
           if (hasSideNavigation == false)
             Align(
@@ -317,7 +316,7 @@ class MorePages extends StatelessWidget {
                 ),
               ],
             ),
-          
+
           // SECTION 5 — MONEY MANAGEMENT (Accounts, Budgets, Categories in one row)
           if (hasSideNavigation == false)
             Align(
@@ -378,7 +377,7 @@ class MorePages extends StatelessWidget {
                 ],
               ),
             ),
-          
+
           // SECTION 6 — SUPPORT (Privacy Policy & Invite Friends)
           Align(
             alignment: AlignmentDirectional.centerStart,
@@ -433,7 +432,7 @@ class MorePages extends StatelessWidget {
               ),
             ],
           ),
-          
+
           if (hasSideNavigation) SettingsPageContent(),
         ],
       ),
@@ -711,24 +710,10 @@ class SettingsPageContent extends StatelessWidget {
 
         SettingsContainer(
           title: "Delete Account",
-          description: "Permanently delete your account and all data",
+          description: "Request deletion of your account and associated data",
           icon: Icons.delete_forever_rounded,
           onTap: () {
-            openPopup(
-              context,
-              icon: Icons.warning_rounded,
-              title: "Delete Account",
-              description: "This action cannot be undone. Are you sure you want to delete your account and all associated data?",
-              onCancel: () {
-                popRoute(context);
-              },
-              onCancelLabel: "Cancel",
-              onSubmit: () {
-                // Add delete account logic here
-                popRoute(context);
-              },
-              onSubmitLabel: "Delete",
-            );
+            openUrl("https://fingenie.vurlex.in/delete-account.html");
           },
         ),
       ],
@@ -1932,8 +1917,10 @@ class _LoginButtonColumnState extends State<_LoginButtonColumn> {
 
   @override
   Widget build(BuildContext context) {
-    String loginLabel = googleUser == null ? "Login" : "Account";
-    IconData loginIcon = googleUser == null
+    final bool isSignedIn =
+        googleUser != null || EmailAuthService.isEmailPasswordUser();
+    String loginLabel = isSignedIn ? "Account" : "Login";
+    IconData loginIcon = !isSignedIn
         ? (appStateSettings["outlinedIcons"]
             ? Icons.login_outlined
             : Icons.login_rounded)
@@ -1943,7 +1930,7 @@ class _LoginButtonColumnState extends State<_LoginButtonColumn> {
 
     return Tappable(
       onTap: () {
-        if (googleUser == null) {
+        if (!isSignedIn) {
           loginWithSync();
         } else {
           pushRoute(
