@@ -33,7 +33,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
   bool _isLoadingScore = false;
   bool _isLoadingWeekly = false;
   bool _isLoadingPrediction = false;
-  
+
   int _lastTransactionCount = 0;
   DateTime? _lastTransactionDate;
 
@@ -54,14 +54,15 @@ class AIInsightsPageState extends State<AIInsightsPage>
       allTransactions.sort((a, b) => b.dateCreated.compareTo(a.dateCreated));
       _lastTransactionDate = allTransactions.first.dateCreated;
     }
-    debugPrint('📊 AI Insights: Initial transaction count: $_lastTransactionCount');
+    debugPrint(
+        '📊 AI Insights: Initial transaction count: $_lastTransactionCount');
   }
 
   Future<void> _checkAndRefreshIfTransactionsChanged() async {
     // Check if transactions have changed
     final allTransactions = await database.allTransactions;
     final currentCount = allTransactions.length;
-    
+
     DateTime? currentLatestDate;
     if (allTransactions.isNotEmpty) {
       allTransactions.sort((a, b) => b.dateCreated.compareTo(a.dateCreated));
@@ -72,19 +73,21 @@ class AIInsightsPageState extends State<AIInsightsPage>
     final dateChanged = currentLatestDate != _lastTransactionDate;
 
     if (countChanged || dateChanged) {
-      debugPrint('🔄 AI Insights: Transactions changed! Count: $_lastTransactionCount → $currentCount');
+      debugPrint(
+          '🔄 AI Insights: Transactions changed! Count: $_lastTransactionCount → $currentCount');
       if (dateChanged) {
-        debugPrint('🔄 AI Insights: Latest transaction date changed: $_lastTransactionDate → $currentLatestDate');
+        debugPrint(
+            '🔄 AI Insights: Latest transaction date changed: $_lastTransactionDate → $currentLatestDate');
       }
       debugPrint('🔄 AI Insights: Clearing cache and reloading data...');
-      
+
       // Clear all AI cache to force fresh calculations
       await _cacheService.clearAll();
-      
+
       // Update tracking
       _lastTransactionCount = currentCount;
       _lastTransactionDate = currentLatestDate;
-      
+
       // Clear current state to force UI refresh
       if (mounted) {
         setState(() {
@@ -93,9 +96,11 @@ class AIInsightsPageState extends State<AIInsightsPage>
           _prediction = null;
         });
       }
-      
-      debugPrint('✅ AI Insights: Cache cleared, data will be recalculated from database on next load');
-      debugPrint('💡 AI Insights: Click "Calculate Financial Score" or "Generate Insights" to see updated data');
+
+      debugPrint(
+          '✅ AI Insights: Cache cleared, data will be recalculated from database on next load');
+      debugPrint(
+          '💡 AI Insights: Click "Calculate Financial Score" or "Generate Insights" to see updated data');
     }
   }
 
@@ -106,7 +111,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     // Watch for transaction changes and refresh if needed (debounced)
     return StreamBuilder<List<Transaction>>(
       stream: database.watchAllTransactions(),
@@ -118,7 +123,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
             _checkAndRefreshIfTransactionsChanged();
           });
         }
-        
+
         return PageFramework(
           title: 'AI Insights',
           dragDownToDismiss: false,
@@ -126,6 +131,9 @@ class AIInsightsPageState extends State<AIInsightsPage>
             const SizedBox(height: 8),
             // Header
             _buildHeader(context),
+            const SizedBox(height: 12),
+            // Ask AI Coach
+            _buildAskAISection(context),
             const SizedBox(height: 16),
             // Financial Score
             _buildFinancialScoreSection(context),
@@ -138,9 +146,6 @@ class AIInsightsPageState extends State<AIInsightsPage>
             const SizedBox(height: 8),
             // Subscription Detection
             _buildSubscriptionSection(context),
-            const SizedBox(height: 16),
-            // Ask AI Coach
-            _buildAskAISection(context),
             const SizedBox(height: 8),
             // Quick Actions
             _buildQuickActions(context),
@@ -303,10 +308,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surface
-            .withValues(alpha: 0.8),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -345,8 +347,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:
-            Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -602,9 +603,8 @@ class AIInsightsPageState extends State<AIInsightsPage>
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
                         ),
                       ),
                       Text(
@@ -678,11 +678,13 @@ class AIInsightsPageState extends State<AIInsightsPage>
     );
   }
 
-  Future<void> _handleQuickQuestion(BuildContext context, String question) async {
+  Future<void> _handleQuickQuestion(
+      BuildContext context, String question) async {
     if (!_engine.isConfigured) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('API key not configured. Please check your .env file and restart the app.'),
+          content: Text(
+              'API key not configured. Please check your .env file and restart the app.'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 4),
         ),
@@ -718,30 +720,31 @@ class AIInsightsPageState extends State<AIInsightsPage>
       final allTransactions = await database.allTransactions;
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
-      
+
       // Calculate monthly income and expenses
       double monthlyIncome = 0;
       double monthlyExpenses = 0;
       Map<String, double> categoryTotals = {};
-      
+
       for (var transaction in allTransactions) {
         if (transaction.dateCreated.isAfter(monthStart) && transaction.paid) {
           if (transaction.income) {
             monthlyIncome += transaction.amount.abs();
           } else {
             monthlyExpenses += transaction.amount.abs();
-            final category = await database.getCategory(transaction.categoryFk).$2;
-            categoryTotals[category.name] = 
+            final category =
+                await database.getCategory(transaction.categoryFk).$2;
+            categoryTotals[category.name] =
                 (categoryTotals[category.name] ?? 0) + transaction.amount.abs();
           }
         }
       }
-      
+
       // Get top categories
       final sortedCategories = categoryTotals.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       final topCategories = sortedCategories.take(5).map((e) => e.key).toList();
-      
+
       // Create financial context
       final financialContext = FinancialContext(
         monthlyIncome: monthlyIncome,
@@ -749,17 +752,17 @@ class AIInsightsPageState extends State<AIInsightsPage>
         topCategories: topCategories,
         currency: currencySymbol,
       );
-      
+
       // Call AI
       final response = await _engine.answerUserQuery(
         query: question,
         context: financialContext,
       );
-      
+
       if (mounted && loadingDialogContext != null) {
         // Close loading dialog first
         Navigator.of(loadingDialogContext!).pop();
-        
+
         if (response != null && response.isNotEmpty) {
           // Show answer in dialog
           showDialog(
@@ -805,11 +808,10 @@ class AIInsightsPageState extends State<AIInsightsPage>
   void _showFeatureComingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-            '$feature — Configure your API key to enable AI features'),
+        content:
+            Text('$feature — Configure your API key to enable AI features'),
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -818,12 +820,13 @@ class AIInsightsPageState extends State<AIInsightsPage>
   Future<void> _loadFinancialScore(BuildContext context) async {
     debugPrint('AI Insights: Loading financial score...');
     debugPrint('AI Insights: isConfigured = ${_engine.isConfigured}');
-    
+
     if (!_engine.isConfigured) {
       debugPrint('AI Insights: Engine not configured, showing error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('API key not configured. Please check your .env file and restart the app.'),
+          content: Text(
+              'API key not configured. Please check your .env file and restart the app.'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 4),
         ),
@@ -835,13 +838,14 @@ class AIInsightsPageState extends State<AIInsightsPage>
     });
 
     try {
-      debugPrint('AI Insights: Calculating real financial data from database...');
-      
+      debugPrint(
+          'AI Insights: Calculating real financial data from database...');
+
       // Get real data from database
       final now = DateTime.now();
       final monthStart = DateTime(now.year, now.month, 1);
       final monthEnd = now;
-      
+
       // Calculate real income and expenses
       final incomeExpenses = await FinancialDataHelper.calculateIncomeExpenses(
         start: monthStart,
@@ -849,32 +853,34 @@ class AIInsightsPageState extends State<AIInsightsPage>
       );
       final totalIncome = incomeExpenses['income'] ?? 0.0;
       final totalExpenses = incomeExpenses['expenses'] ?? 0.0;
-      final savingsRate = totalIncome > 0 
-          ? (totalIncome - totalExpenses) / totalIncome 
-          : 0.0;
-      
+      final savingsRate =
+          totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0.0;
+
       // Get real budget adherence
-      final budgetAdherence = await FinancialDataHelper.calculateBudgetAdherence(
+      final budgetAdherence =
+          await FinancialDataHelper.calculateBudgetAdherence(
         start: monthStart,
         end: monthEnd,
       );
-      
+
       // Get real category count
       final numCategories = await FinancialDataHelper.getCategoryCount(
         start: monthStart,
         end: monthEnd,
       );
-      
+
       // Get real recurring expense count
-      final recurringExpenseCount = await FinancialDataHelper.getRecurringExpenseCount();
-      
+      final recurringExpenseCount =
+          await FinancialDataHelper.getRecurringExpenseCount();
+
       debugPrint('═══════════════════════════════════════════════════════════');
       debugPrint('🎯 AI INSIGHTS: REAL DATA CALCULATED FROM DATABASE');
       debugPrint('═══════════════════════════════════════════════════════════');
       debugPrint('💰 Total Income: ₹${totalIncome.toStringAsFixed(2)}');
       debugPrint('💸 Total Expenses: ₹${totalExpenses.toStringAsFixed(2)}');
       debugPrint('📊 Savings Rate: ${(savingsRate * 100).toStringAsFixed(1)}%');
-      debugPrint('🎯 Budget Adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}%');
+      debugPrint(
+          '🎯 Budget Adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}%');
       debugPrint('📂 Number of Categories: $numCategories');
       debugPrint('🔄 Recurring Expenses: $recurringExpenseCount');
       debugPrint('═══════════════════════════════════════════════════════════');
@@ -889,7 +895,8 @@ class AIInsightsPageState extends State<AIInsightsPage>
         numCategories: numCategories,
         recurringExpenseCount: recurringExpenseCount,
       );
-      debugPrint('AI Insights: Financial score received: ${score != null ? "Success" : "Null"}');
+      debugPrint(
+          'AI Insights: Financial score received: ${score != null ? "Success" : "Null"}');
       if (mounted) {
         setState(() {
           _score = score;
@@ -900,14 +907,17 @@ class AIInsightsPageState extends State<AIInsightsPage>
       if (mounted) {
         final errorMsg = e.toString();
         debugPrint('AI Insights: Error message: $errorMsg');
-        if (errorMsg.contains('quota') || errorMsg.contains('rate limit') || errorMsg.contains('exceeded')) {
+        if (errorMsg.contains('quota') ||
+            errorMsg.contains('rate limit') ||
+            errorMsg.contains('exceeded')) {
           // Check if it's a "limit: 0" error (free tier not enabled)
           final isLimitZero = errorMsg.contains('limit: 0');
-          final retryMatch = RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
-          final retrySeconds = retryMatch != null 
-              ? double.tryParse(retryMatch.group(1) ?? '0')?.round() ?? 0 
+          final retryMatch =
+              RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
+          final retrySeconds = retryMatch != null
+              ? double.tryParse(retryMatch.group(1) ?? '0')?.round() ?? 0
               : null;
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Column(
@@ -915,18 +925,21 @@ class AIInsightsPageState extends State<AIInsightsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isLimitZero 
-                        ? '⚠️ Free Tier Not Enabled' 
+                    isLimitZero
+                        ? '⚠️ Free Tier Not Enabled'
                         : '⚠️ Rate Limit Exceeded',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 4),
                   if (isLimitZero)
-                    Text('Your free tier quota is 0. This means the Generative AI API is not enabled.\n\nEnable it at:\nconsole.cloud.google.com/apis/library/generativelanguage.googleapis.com')
+                    Text(
+                        'Your free tier quota is 0. This means the Generative AI API is not enabled.\n\nEnable it at:\nconsole.cloud.google.com/apis/library/generativelanguage.googleapis.com')
                   else if (retrySeconds != null && retrySeconds > 0)
-                    Text('Rate limit reached. Please try again in ${retrySeconds} seconds.')
+                    Text(
+                        'Rate limit reached. Please try again in ${retrySeconds} seconds.')
                   else
-                    Text('Quota exceeded. Check your API plan at:\nai.google.dev/gemini-api/docs/rate-limits'),
+                    Text(
+                        'Quota exceeded. Check your API plan at:\nai.google.dev/gemini-api/docs/rate-limits'),
                 ],
               ),
               backgroundColor: isLimitZero ? Colors.red : Colors.orange,
@@ -943,7 +956,8 @@ class AIInsightsPageState extends State<AIInsightsPage>
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${errorMsg.length > 100 ? errorMsg.substring(0, 100) + "..." : errorMsg}'),
+              content: Text(
+                  'Error: ${errorMsg.length > 100 ? errorMsg.substring(0, 100) + "..." : errorMsg}'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 4),
             ),
@@ -962,7 +976,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
   Future<void> _loadWeeklyInsights(BuildContext context) async {
     // Always check for transaction changes before loading
     await _checkAndRefreshIfTransactionsChanged();
-    
+
     if (!_engine.isConfigured) {
       _showFeatureComingSoon(context, 'Weekly AI Insights');
       return;
@@ -976,7 +990,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
       final weekStart = now.subtract(const Duration(days: 7));
 
       debugPrint('AI Insights: Getting real weekly data from database...');
-      
+
       // Get real income and expenses for the week
       final incomeExpenses = await FinancialDataHelper.calculateIncomeExpenses(
         start: weekStart,
@@ -984,17 +998,20 @@ class AIInsightsPageState extends State<AIInsightsPage>
       );
       final totalIncome = incomeExpenses['income'] ?? 0.0;
       final totalSpent = incomeExpenses['expenses'] ?? 0.0;
-      
+
       // Get real category breakdown for the week
       final categoryBreakdown = await FinancialDataHelper.getCategoryBreakdown(
         start: weekStart,
         end: now,
       );
-      
+
       // Format category breakdown for AI prompt (needs 'name' and 'percentage' fields)
       final formattedBreakdown = categoryBreakdown.map((cat) {
-        final totalSpending = categoryBreakdown.fold<double>(0.0, (sum, c) => sum + (c['amount'] as num).toDouble());
-        final percentage = totalSpending > 0 ? ((cat['amount'] as num).toDouble() / totalSpending * 100) : 0.0;
+        final totalSpending = categoryBreakdown.fold<double>(
+            0.0, (sum, c) => sum + (c['amount'] as num).toDouble());
+        final percentage = totalSpending > 0
+            ? ((cat['amount'] as num).toDouble() / totalSpending * 100)
+            : 0.0;
         return {
           'name': cat['name'] ?? cat['category'],
           'category': cat['category'],
@@ -1002,13 +1019,16 @@ class AIInsightsPageState extends State<AIInsightsPage>
           'percentage': percentage,
         };
       }).toList();
-      
-      debugPrint('AI Insights: Weekly data - Income: ₹$totalIncome, Spent: ₹$totalSpent, Categories: ${formattedBreakdown.length}');
+
+      debugPrint(
+          'AI Insights: Weekly data - Income: ₹$totalIncome, Spent: ₹$totalSpent, Categories: ${formattedBreakdown.length}');
       debugPrint('AI Insights: Category breakdown:');
       for (var cat in formattedBreakdown) {
-        debugPrint('  - ${cat['name']}: ₹${cat['amount']} (${cat['percentage']}%)');
+        debugPrint(
+            '  - ${cat['name']}: ₹${cat['amount']} (${cat['percentage']}%)');
       }
-      debugPrint('AI Insights: Calling generateWeeklyInsights with real data...');
+      debugPrint(
+          'AI Insights: Calling generateWeeklyInsights with real data...');
 
       final insight = await _engine.generateWeeklyInsights(
         totalIncome: totalIncome,
@@ -1025,16 +1045,20 @@ class AIInsightsPageState extends State<AIInsightsPage>
     } catch (e) {
       if (mounted) {
         final errorMsg = e.toString();
-        if (errorMsg.contains('quota') || errorMsg.contains('rate limit') || errorMsg.contains('exceeded')) {
+        if (errorMsg.contains('quota') ||
+            errorMsg.contains('rate limit') ||
+            errorMsg.contains('exceeded')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('⚠️ Billing Not Set Up', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('⚠️ Billing Not Set Up',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
-                  Text('Your API key needs billing enabled. Go to Google AI Studio → API Keys → Set up billing'),
+                  Text(
+                      'Your API key needs billing enabled. Go to Google AI Studio → API Keys → Set up billing'),
                 ],
               ),
               backgroundColor: Colors.orange,
@@ -1057,7 +1081,7 @@ class AIInsightsPageState extends State<AIInsightsPage>
   Future<void> _loadPrediction(BuildContext context) async {
     // Always check for transaction changes before loading
     await _checkAndRefreshIfTransactionsChanged();
-    
+
     if (!_engine.isConfigured) {
       _showFeatureComingSoon(context, 'Spending Prediction');
       return;
@@ -1068,13 +1092,15 @@ class AIInsightsPageState extends State<AIInsightsPage>
 
     try {
       debugPrint('AI Insights: Getting real historical data from database...');
-      
+
       // Get real historical monthly spending (last 3 months)
-      final historicalMonths = await FinancialDataHelper.getHistoricalMonthlySpending(months: 3);
-      
+      final historicalMonths =
+          await FinancialDataHelper.getHistoricalMonthlySpending(months: 3);
+
       // Get real current month categories
-      final currentCategories = await FinancialDataHelper.getCurrentMonthCategories();
-      
+      final currentCategories =
+          await FinancialDataHelper.getCurrentMonthCategories();
+
       // Format categories for prediction prompt (needs 'name' field)
       final formattedCategories = currentCategories.map((cat) {
         return {
@@ -1083,16 +1109,18 @@ class AIInsightsPageState extends State<AIInsightsPage>
           'amount': cat['amount'],
         };
       }).toList();
-      
+
       debugPrint('AI Insights: Historical months: ${historicalMonths.length}');
       for (var month in historicalMonths) {
         debugPrint('  - ${month['month']}: ₹${month['total']}');
       }
-      debugPrint('AI Insights: Current categories: ${formattedCategories.length}');
+      debugPrint(
+          'AI Insights: Current categories: ${formattedCategories.length}');
       for (var cat in formattedCategories) {
         debugPrint('  - ${cat['name']}: ₹${cat['amount']}');
       }
-      debugPrint('AI Insights: Calling predictNextMonthSpending with real data...');
+      debugPrint(
+          'AI Insights: Calling predictNextMonthSpending with real data...');
 
       final prediction = await _engine.predictNextMonthSpending(
         historicalMonths: historicalMonths,
@@ -1106,16 +1134,20 @@ class AIInsightsPageState extends State<AIInsightsPage>
     } catch (e) {
       if (mounted) {
         final errorMsg = e.toString();
-        if (errorMsg.contains('quota') || errorMsg.contains('rate limit') || errorMsg.contains('exceeded')) {
+        if (errorMsg.contains('quota') ||
+            errorMsg.contains('rate limit') ||
+            errorMsg.contains('exceeded')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('⚠️ Billing Not Set Up', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('⚠️ Billing Not Set Up',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
-                  Text('Your API key needs billing enabled. Go to Google AI Studio → API Keys → Set up billing'),
+                  Text(
+                      'Your API key needs billing enabled. Go to Google AI Studio → API Keys → Set up billing'),
                 ],
               ),
               backgroundColor: Colors.orange,

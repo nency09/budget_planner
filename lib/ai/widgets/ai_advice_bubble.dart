@@ -29,7 +29,8 @@ class AIAdviceBubble extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                  color:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -40,7 +41,7 @@ class AIAdviceBubble extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'AI Money Coach',
+                'FinGenie AI Coach',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,

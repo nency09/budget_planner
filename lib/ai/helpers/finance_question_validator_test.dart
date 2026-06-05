@@ -1,15 +1,13 @@
-/// Test examples for the FinanceQuestionValidator
-/// 
-/// This file demonstrates how the validator works with various questions.
-/// Run this to test the finance question detection logic.
+/// Test examples for the FinanceQuestionValidator.
+///
+/// Run this file to manually check finance question detection behavior.
 
 import 'package:budget/ai/helpers/finance_question_validator.dart';
 
 void main() {
-  print('🧪 Testing Finance Question Validator\n');
+  print('Testing FinanceQuestionValidator\n');
 
-  // Test finance-related questions (should return true)
-  final financeQuestions = [
+  final allowedQuestions = [
     "How much did I spend on food this month?",
     "What are my top spending categories?",
     "How can I save more money?",
@@ -19,14 +17,17 @@ void main() {
     "What are some good saving habits?",
     "How much is my net worth?",
     "I want to reduce my spending on entertainment",
-    "Can you help me plan my budget for next month?",
+    "Can you help me budget for next month?",
     "What's the best way to manage my finances?",
     "How much money do I have in my account?",
     "I need advice on my loan payments",
     "Help me understand my transaction history",
+    "Hi",
+    "Good morning",
+    "Thank you",
+    "What can you do?",
   ];
 
-  // Test non-finance questions (should return false)
   final nonFinanceQuestions = [
     "What is the national animal of India?",
     "Who is the president of the USA?",
@@ -36,29 +37,31 @@ void main() {
     "Tell me a joke",
     "What's the latest movie release?",
     "How do I learn programming?",
+    "Help me with coding",
+    "Give me medical advice",
     "What are the symptoms of flu?",
     "Explain quantum physics",
   ];
 
-  print('✅ Finance-related questions (should be accepted):');
-  for (final question in financeQuestions) {
+  print('Allowed questions:');
+  for (final question in allowedQuestions) {
     final isFinance = FinanceQuestionValidator.isFinanceQuestion(question);
-    final status = isFinance ? '✅ ACCEPTED' : '❌ REJECTED';
+    final status = isFinance ? 'ACCEPTED' : 'REJECTED';
     print('$status: "$question"');
   }
 
-  print('\n❌ Non-finance questions (should be rejected):');
+  print('\nNon-finance questions:');
   for (final question in nonFinanceQuestions) {
     final isFinance = FinanceQuestionValidator.isFinanceQuestion(question);
-    final status = isFinance ? '❌ WRONGLY ACCEPTED' : '✅ CORRECTLY REJECTED';
+    final status = isFinance ? 'WRONGLY ACCEPTED' : 'CORRECTLY REJECTED';
     print('$status: "$question"');
   }
 
-  print('\n📝 Rejection message:');
+  print('\nRejection message:');
   print('"${FinanceQuestionValidator.getRejectionMessage()}"');
 
-  print('\n💡 Example valid questions:');
+  print('\nExample valid questions:');
   for (final example in FinanceQuestionValidator.getExampleQuestions()) {
-    print('• $example');
+    print('- $example');
   }
 }
