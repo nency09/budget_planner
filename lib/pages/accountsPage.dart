@@ -1,6 +1,6 @@
 import 'package:budget/colors.dart';
 import 'package:budget/functions.dart';
-import 'package:budget/main.dart';
+import 'package:budget/pages/email_auth_page.dart';
 import 'package:budget/pages/addTransactionPage.dart';
 import 'package:budget/struct/settings.dart';
 import 'package:budget/services/email_auth_service.dart';
@@ -141,7 +141,26 @@ class AccountsPageState extends State<AccountsPage> {
                         onTap: () async {
                           await signInAndSync(context, next: () {});
                         },
-                      )
+                      ),
+                      if (getPlatform() != PlatformOS.isIOS) ...[
+                        SizedBox(height: 12),
+                        SettingsContainerOutlined(
+                          title: "Sign In with Email",
+                          icon: Icons.email_outlined,
+                          isExpanded: false,
+                          onTap: () async {
+                            final signedIn =
+                                await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (context) => EmailAuthPage(),
+                              ),
+                            );
+                            if (signedIn == true && mounted) {
+                              setState(() {});
+                            }
+                          },
+                        ),
+                      ],
                     ],
                   )
                 : Column(
@@ -218,14 +237,20 @@ class AccountsPageState extends State<AccountsPage> {
                             }
 
                             if (result == true) {
-                              if (getIsFullScreen(context) == false) {
-                                maybePopRoute(context);
-                                settingsPageStateKey.currentState
-                                    ?.refreshState();
-                              } else {
-                                pageNavigationFrameworkKey.currentState!
-                                    .changePage(0, switchNavbar: true);
-                              }
+                              final navigator = Navigator.of(context);
+                              settingsPageStateKey.currentState?.refreshState();
+                              refreshState();
+                              await updateSettings(
+                                "startOnboardingAtLogin",
+                                true,
+                                updateGlobalState: false,
+                              );
+                              await updateSettings(
+                                "hasOnboarded",
+                                false,
+                                updateGlobalState: true,
+                              );
+                              navigator.popUntil((route) => route.isFirst);
                             }
                           },
                           padding: EdgeInsetsDirectional.symmetric(

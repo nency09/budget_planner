@@ -217,7 +217,7 @@ Future<bool> testIfHasGmailAccess() async {
     final authHeaders = await googleUser!.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
     gMail.GmailApi gmailApi = gMail.GmailApi(authenticateClient);
-    gMail.ListMessagesResponse results = await gmailApi.users.messages
+    await gmailApi.users.messages
         .list(googleUser!.id.toString(), maxResults: 1);
   } catch (e) {
     print(e.toString());
@@ -235,6 +235,63 @@ Future<bool> signOutGoogle() async {
   refreshUIAfterLoginChange();
   print("Signedout");
   return true;
+}
+
+SnackbarMessage getGoogleDriveErrorMessage(Object error) {
+  if (error is DetailedApiRequestError) {
+    if (error.status == 403 &&
+        (error.message ?? "")
+            .toLowerCase()
+            .contains("google drive api has not been used")) {
+      return SnackbarMessage(
+        title: "Google Drive API is not enabled",
+        description:
+            "Enable Google Drive API in Firebase/Google Cloud for this project, then try again.",
+        icon: appStateSettings["outlinedIcons"]
+            ? Icons.cloud_off_outlined
+            : Icons.cloud_off_rounded,
+        timeout: Duration(milliseconds: 5200),
+      );
+    }
+    if (error.status == 403) {
+      return SnackbarMessage(
+        title: "Google Drive access is blocked",
+        description:
+            "Check Google Drive API and OAuth permissions for this Firebase project.",
+        icon: appStateSettings["outlinedIcons"]
+            ? Icons.lock_outlined
+            : Icons.lock_rounded,
+        timeout: Duration(milliseconds: 5200),
+      );
+    }
+  }
+
+  if (googleUser == null) {
+    return SnackbarMessage(
+      title: "Google Drive needs Google sign-in",
+      description:
+          "Email sign-in works for your account, but backup and restore use Google Drive.",
+      icon: appStateSettings["outlinedIcons"]
+          ? Icons.cloud_outlined
+          : Icons.cloud_rounded,
+      timeout: Duration(milliseconds: 5200),
+    );
+  }
+
+  return SnackbarMessage(
+    title: "Google Drive request failed",
+    description: error.toString(),
+    icon: appStateSettings["outlinedIcons"]
+        ? Icons.error_outlined
+        : Icons.error_rounded,
+    timeout: Duration(milliseconds: 5200),
+  );
+}
+
+bool ensureGoogleDriveSignIn() {
+  if (googleUser != null) return true;
+  openSnackbar(getGoogleDriveErrorMessage("google-user-missing"));
+  return false;
 }
 
 Future<bool> refreshGoogleSignIn() async {
@@ -304,6 +361,7 @@ Future<void> createBackupInBackground(context) async {
   if (appStateSettings["hasSignedIn"] == false) return;
   if (errorSigningInDuringCloud == true) return;
   if (kIsWeb && !entireAppLoaded) return;
+  if (EmailAuthService.isEmailPasswordUser() && googleUser == null) return;
   // print(entireAppLoaded);
   print("Last backup: " + appStateSettings["lastBackup"]);
   //Only run this once, don't run again if the global state changes (e.g. when changing a setting)
@@ -394,6 +452,8 @@ Future<void> createBackup(
   bool deleteOldBackups = false,
   String? clientIDForSync,
 }) async {
+  if (!ensureGoogleDriveSignIn()) return;
+
   try {
     if (silentBackup == false || silentBackup == null) {
       loadingIndeterminateKey.currentState?.setVisibility(true);
@@ -427,9 +487,6 @@ Future<void> createBackup(
         currentDBFileInfo.mediaStream, currentDBFileInfo.dbFileBytes.length);
 
     var driveFile = new drive.File();
-    final timestamp =
-        DateFormat("yyyy-MM-dd-hhmmss").format(DateTime.now().toUtc());
-    // -$timestamp
     driveFile.name =
         "db-v$schemaVersionGlobal-${getCurrentDeviceName()}.sqlite";
     if (clientIDForSync != null)
@@ -466,19 +523,15 @@ Future<void> createBackup(
     } else if (e is PlatformException) {
       await refreshGoogleSignIn();
     } else {
-      openSnackbar(
-        SnackbarMessage(
-            title: e.toString(),
-            icon: appStateSettings["outlinedIcons"]
-                ? Icons.error_outlined
-                : Icons.error_rounded),
-      );
+      openSnackbar(getGoogleDriveErrorMessage(e));
     }
   }
 }
 
 Future<void> deleteRecentBackups(context, amountToKeep,
     {bool? silentDelete}) async {
+  if (!ensureGoogleDriveSignIn()) return;
+
   try {
     if (silentDelete == false || silentDelete == null) {
       loadingIndeterminateKey.currentState?.setVisibility(true);
@@ -513,13 +566,7 @@ Future<void> deleteRecentBackups(context, amountToKeep,
     if (silentDelete == false || silentDelete == null) {
       loadingIndeterminateKey.currentState?.setVisibility(false);
     }
-    openSnackbar(
-      SnackbarMessage(
-          title: e.toString(),
-          icon: appStateSettings["outlinedIcons"]
-              ? Icons.error_outlined
-              : Icons.error_rounded),
-    );
+    openSnackbar(getGoogleDriveErrorMessage(e));
   }
 }
 
@@ -527,7 +574,7 @@ Future<void> deleteBackup(drive.DriveApi driveApi, String fileId) async {
   try {
     await driveApi.files.delete(fileId);
   } catch (e) {
-    openSnackbar(SnackbarMessage(title: e.toString()));
+    openSnackbar(getGoogleDriveErrorMessage(e));
   }
 }
 
@@ -535,6 +582,8 @@ Future<void> chooseBackup(context,
     {bool isManaging = false,
     bool isClientSync = false,
     bool hideDownloadButton = false}) async {
+  if (!ensureGoogleDriveSignIn()) return;
+
   try {
     openBottomSheet(
       context,
@@ -546,13 +595,7 @@ Future<void> chooseBackup(context,
     );
   } catch (e) {
     popRoute(context);
-    openSnackbar(
-      SnackbarMessage(
-          title: e.toString(),
-          icon: appStateSettings["outlinedIcons"]
-              ? Icons.error_outlined
-              : Icons.error_rounded),
-    );
+    openSnackbar(getGoogleDriveErrorMessage(e));
   }
 }
 
@@ -606,24 +649,12 @@ Future<void> loadBackup(
         );
       },
       onError: (error) {
-        openSnackbar(
-          SnackbarMessage(
-              title: error.toString(),
-              icon: appStateSettings["outlinedIcons"]
-                  ? Icons.error_outlined
-                  : Icons.error_rounded),
-        );
+        openSnackbar(getGoogleDriveErrorMessage(error));
       },
     );
   } catch (e) {
     popRoute(context);
-    openSnackbar(
-      SnackbarMessage(
-          title: e.toString(),
-          icon: appStateSettings["outlinedIcons"]
-              ? Icons.error_outlined
-              : Icons.error_rounded),
-    );
+    openSnackbar(getGoogleDriveErrorMessage(e));
   }
 }
 
@@ -769,6 +800,8 @@ class GoogleAccountLoginButtonState extends State<GoogleAccountLoginButton> {
 }
 
 Future<(drive.DriveApi? driveApi, List<drive.File>?)> getDriveFiles() async {
+  if (!ensureGoogleDriveSignIn()) return (null, null);
+
   try {
     final authHeaders = await googleUser!.authHeaders;
     final authenticateClient = GoogleAuthClient(authHeaders);
@@ -786,13 +819,7 @@ Future<(drive.DriveApi? driveApi, List<drive.File>?)> getDriveFiles() async {
       await refreshGoogleSignIn();
       return await getDriveFiles();
     } else {
-      openSnackbar(
-        SnackbarMessage(
-            title: e.toString(),
-            icon: appStateSettings["outlinedIcons"]
-                ? Icons.error_outlined
-                : Icons.error_rounded),
-      );
+      openSnackbar(getGoogleDriveErrorMessage(e));
     }
   }
   return (null, null);

@@ -85,6 +85,17 @@ class EmailAuthService {
           code: 'invalid-email',
           message: 'Please enter a valid email address.',
         );
+      } else if (e.code == 'operation-not-allowed') {
+        throw FirebaseAuthException(
+          code: 'operation-not-allowed',
+          message:
+              'Email/password sign-in is not enabled for this Firebase project.',
+        );
+      } else if (e.code == 'network-request-failed') {
+        throw FirebaseAuthException(
+          code: 'network-request-failed',
+          message: 'Please check your internet connection and try again.',
+        );
       }
 
       throw e;
@@ -164,6 +175,11 @@ class EmailAuthService {
           code: 'wrong-password',
           message: 'Incorrect password. Please try again.',
         );
+      } else if (e.code == 'invalid-credential') {
+        throw FirebaseAuthException(
+          code: 'invalid-credential',
+          message: 'Invalid email or password. Please try again.',
+        );
       } else if (e.code == 'invalid-email') {
         throw FirebaseAuthException(
           code: 'invalid-email',
@@ -173,6 +189,22 @@ class EmailAuthService {
         throw FirebaseAuthException(
           code: 'user-disabled',
           message: 'This account has been disabled.',
+        );
+      } else if (e.code == 'operation-not-allowed') {
+        throw FirebaseAuthException(
+          code: 'operation-not-allowed',
+          message:
+              'Email/password sign-in is not enabled for this Firebase project.',
+        );
+      } else if (e.code == 'network-request-failed') {
+        throw FirebaseAuthException(
+          code: 'network-request-failed',
+          message: 'Please check your internet connection and try again.',
+        );
+      } else if (e.code == 'too-many-requests') {
+        throw FirebaseAuthException(
+          code: 'too-many-requests',
+          message: 'Too many attempts. Please wait and try again.',
         );
       }
 
@@ -193,6 +225,11 @@ class EmailAuthService {
       await updateSettings(
         "currentUserEmail",
         "",
+        updateGlobalState: true,
+      );
+      await updateSettings(
+        "hasSignedIn",
+        false,
         updateGlobalState: true,
       );
     } catch (e) {

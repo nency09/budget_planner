@@ -114,13 +114,21 @@ class InitialPageRouteNavigator extends StatelessWidget {
             }
           },
           child: () {
-            print("Rebuilt Main Request from: hasOnboarded : ${appStateSettings["hasOnboarded"]}");
+            print(
+                "Rebuilt Main Request from: hasOnboarded : ${appStateSettings["hasOnboarded"]}");
             return appStateSettings["hasOnboarded"] != true
-                ? OnBoardingPage(key: ValueKey("Onboarding"))
+                ? OnBoardingPage(
+                    key: ValueKey("Onboarding"),
+                    initialPage:
+                        appStateSettings["startOnboardingAtLogin"] == true
+                            ? 2
+                            : 0,
+                  )
                 : PageNavigationFrameworkSafeArea(
                     child: PageNavigationFramework(
                       key: pageNavigationFrameworkKey,
-                      widthSideNavigationBar: getWidthNavigationSidebar(context),
+                      widthSideNavigationBar:
+                          getWidthNavigationSidebar(context),
                     ),
                   );
           }(),
@@ -444,7 +452,8 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
           await runAllCloudFunctions(context).timeout(
             Duration(seconds: 30),
             onTimeout: () {
-              print("Cloud functions timed out after 30 seconds, continuing anyway");
+              print(
+                  "Cloud functions timed out after 30 seconds, continuing anyway");
               loadingIndeterminateKey.currentState?.setVisibility(false);
               runningCloudFunctions = false;
               return false;

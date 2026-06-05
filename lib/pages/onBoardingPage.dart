@@ -32,10 +32,12 @@ class OnBoardingPage extends StatelessWidget {
     Key? key,
     this.popNavigationWhenDone = false,
     this.showPreviewDemoButton = true,
+    this.initialPage = 0,
   }) : super(key: key);
 
   final bool popNavigationWhenDone;
   final bool showPreviewDemoButton;
+  final int initialPage;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,8 @@ class OnBoardingPage extends StatelessWidget {
         resizeToAvoidBottomInset: false,
         body: OnBoardingPageBody(
             popNavigationWhenDone: popNavigationWhenDone,
-            showPreviewDemoButton: showPreviewDemoButton));
+            showPreviewDemoButton: showPreviewDemoButton,
+            initialPage: initialPage));
   }
 }
 
@@ -52,16 +55,18 @@ class OnBoardingPageBody extends StatefulWidget {
     Key? key,
     this.popNavigationWhenDone = false,
     this.showPreviewDemoButton = true,
+    this.initialPage = 0,
   }) : super(key: key);
   final bool popNavigationWhenDone;
   final bool showPreviewDemoButton;
+  final int initialPage;
 
   @override
   State<OnBoardingPageBody> createState() => OnBoardingPageBodyState();
 }
 
 class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
-  final PageController controller = PageController();
+  late final PageController controller;
 
   double? selectedAmount;
   int selectedPeriodLength = 1;
@@ -141,6 +146,7 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
   @override
   void initState() {
     super.initState();
+    controller = PageController(initialPage: widget.initialPage);
     _focusAttachment = _focusNode.attach(context, onKeyEvent: (node, event) {
       if (event.logicalKey.keyLabel == "Go Back" ||
           event.logicalKey == LogicalKeyboardKey.escape) {
@@ -157,6 +163,10 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
     _focusNode.requestFocus();
 
     Future.delayed(Duration.zero, () async {
+      if (appStateSettings["startOnboardingAtLogin"] == true) {
+        await updateSettings("startOnboardingAtLogin", false,
+            updateGlobalState: false);
+      }
       // Functions to run after entire UI loaded - landing page
       // Run here too, so user has a wallet when creating first budget
       // We need to run this after the UI is loaded - after translations are loaded
@@ -166,6 +176,7 @@ class OnBoardingPageBodyState extends State<OnBoardingPageBody> {
 
   @override
   void dispose() {
+    controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }

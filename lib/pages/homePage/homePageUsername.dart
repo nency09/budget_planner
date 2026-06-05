@@ -51,6 +51,8 @@ class HomePageUsername extends StatelessWidget {
                     text: getWelcomeMessage(),
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
@@ -88,6 +90,10 @@ class HomePageUsername extends StatelessWidget {
                   text: !showUsername ? "home".tr() : username,
                   fontWeight: FontWeight.bold,
                   fontSize: 33,
+                  autoSizeText: true,
+                  minFontSize: 18,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   textColor: Theme.of(context).colorScheme.onPrimaryContainer,
                   // textColor: showGreeting && showUsername
                   //     ? Theme.of(context).colorScheme.onPrimaryContainer

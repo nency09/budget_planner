@@ -4,11 +4,17 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:budget/database/tables.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/defaultCategories.dart';
-
 import 'package:budget/database/generatePreviewData.dart';
 
 //Initialize default values in database
 Future<bool> initializeDefaultDatabase() async {
+  // A previous testing build accidentally enabled preview data for every user.
+  // Clean it up on update so testers return to an empty real database.
+  if (appStateSettings["previewDemo"] == true) {
+    await deletePreviewData();
+    return true;
+  }
+
   //Initialize default categories, but not after a backup load
   if (isDatabaseImportedOnThisSession != true &&
       (await database.getAllCategories()).length <= 0) {
@@ -20,11 +26,6 @@ Future<bool> initializeDefaultDatabase() async {
       defaultWallet(),
       customDateTimeModified: DateTime(0),
     );
-  }
-
-  // TEMP: Populate sample data once
-  if (appStateSettings["previewDemo"] != true) {
-    await generatePreviewData();
   }
 
   return true;

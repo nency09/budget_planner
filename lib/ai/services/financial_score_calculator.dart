@@ -4,21 +4,58 @@ import 'package:budget/struct/currencyFunctions.dart';
 import 'package:flutter/foundation.dart';
 
 /// Local financial score calculator (non-AI)
-/// 
+///
 /// Calculates a 0-100 financial health score based on:
 /// - Savings ratio
 /// - Debt level
 /// - Budget adherence
 /// - Expense stability
 class FinancialScoreCalculator {
+  Future<List<Transaction>> _getTransactionsInRange({
+    required DateTime start,
+    required DateTime end,
+    bool paidOnly = false,
+    List<String>? walletPks,
+    List<String>? categoryFks,
+    List<String>? categoryFksExclude,
+    bool? isIncome,
+  }) async {
+    final allTransactions = await database.allTransactions;
+    return allTransactions.where((transaction) {
+      if (transaction.dateCreated.isBefore(start) ||
+          transaction.dateCreated.isAfter(end)) {
+        return false;
+      }
+      if (paidOnly && transaction.paid != true) return false;
+      if (walletPks != null &&
+          walletPks.isNotEmpty &&
+          !walletPks.contains(transaction.walletFk)) {
+        return false;
+      }
+      if (categoryFks != null &&
+          categoryFks.isNotEmpty &&
+          !categoryFks.contains(transaction.categoryFk)) {
+        return false;
+      }
+      if (categoryFksExclude != null &&
+          categoryFksExclude.isNotEmpty &&
+          categoryFksExclude.contains(transaction.categoryFk)) {
+        return false;
+      }
+      if (isIncome != null && transaction.income != isIncome) return false;
+      return true;
+    }).toList();
+  }
+
   /// Calculate financial health score (0-100)
-  /// 
+  ///
   /// This is calculated locally without AI to keep costs down
   Future<int> calculateFinancialScore({
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    debugPrint('📊 FinancialScoreCalculator: Calculating score for period ${startDate.toString().substring(0, 10)} to ${endDate.toString().substring(0, 10)}');
+    debugPrint(
+        '📊 FinancialScoreCalculator: Calculating score for period ${startDate.toString().substring(0, 10)} to ${endDate.toString().substring(0, 10)}');
 
     final allWallets = await database.getAllWallets();
     final allWalletsObj = AllWallets(
@@ -27,7 +64,7 @@ class FinancialScoreCalculator {
     );
 
     // Get transactions in date range
-    final transactions = await database.getAllTransactions(
+    final transactions = await _getTransactionsInRange(
       start: startDate,
       end: endDate,
       paidOnly: true,
@@ -38,19 +75,18 @@ class FinancialScoreCalculator {
     double totalDebt = 0;
     double totalSavings = 0;
     Map<String, double> monthlySpending = {};
-    double totalBudgeted = 0;
-    double totalActualSpendingInBudgets = 0;
 
     // Calculate income, expenses, and debt
     for (var transaction in transactions) {
       final amountInPrimaryCurrency = transaction.amount *
-          amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, transaction.walletFk);
+          amountRatioToPrimaryCurrencyGivenPk(
+              allWalletsObj, transaction.walletFk);
 
       if (transaction.income) {
         totalIncome += amountInPrimaryCurrency.abs();
       } else {
         totalExpenses += amountInPrimaryCurrency.abs();
-        
+
         // Check for debt/credit transactions
         if (transaction.type == TransactionSpecialType.debt) {
           totalDebt += amountInPrimaryCurrency.abs();
@@ -58,9 +94,11 @@ class FinancialScoreCalculator {
       }
 
       // Group spending by month for stability calculation
-      final monthKey = '${transaction.dateCreated.year}-${transaction.dateCreated.month}';
+      final monthKey =
+          '${transaction.dateCreated.year}-${transaction.dateCreated.month}';
       if (!transaction.income) {
-        monthlySpending[monthKey] = (monthlySpending[monthKey] ?? 0) + amountInPrimaryCurrency.abs();
+        monthlySpending[monthKey] =
+            (monthlySpending[monthKey] ?? 0) + amountInPrimaryCurrency.abs();
       }
     }
 
@@ -69,13 +107,15 @@ class FinancialScoreCalculator {
     // Calculate savings ratio (0-30 points)
     double savingsRatio = totalIncome > 0 ? (totalSavings / totalIncome) : 0.0;
     int savingsScore = (savingsRatio * 30).clamp(0, 30).round();
-    debugPrint('💰 Savings ratio: ${(savingsRatio * 100).toStringAsFixed(1)}% → Score: $savingsScore/30');
+    debugPrint(
+        '💰 Savings ratio: ${(savingsRatio * 100).toStringAsFixed(1)}% → Score: $savingsScore/30');
 
     // Calculate debt level (0-20 points)
     // Lower debt = higher score
     double debtRatio = totalIncome > 0 ? (totalDebt / totalIncome) : 0.0;
     int debtScore = ((1.0 - debtRatio.clamp(0.0, 1.0)) * 20).round();
-    debugPrint('💳 Debt ratio: ${(debtRatio * 100).toStringAsFixed(1)}% → Score: $debtScore/20');
+    debugPrint(
+        '💳 Debt ratio: ${(debtRatio * 100).toStringAsFixed(1)}% → Score: $debtScore/20');
 
     // Calculate budget adherence (0-25 points)
     final budgets = await database.getAllBudgets();
@@ -85,7 +125,6 @@ class FinancialScoreCalculator {
     for (var budget in budgets) {
       final budgetStart = budget.startDate;
       final budgetEnd = budget.endDate;
-      if (budgetStart == null || budgetEnd == null) continue;
 
       // Check if budget period overlaps with our date range
       if (budgetStart.isAfter(endDate) || budgetEnd.isBefore(startDate)) {
@@ -94,10 +133,10 @@ class FinancialScoreCalculator {
 
       totalActiveBudgets++;
 
-      final budgetAmount = budget.amount * amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, budget.walletFk);
-      totalBudgeted += budgetAmount;
+      final budgetAmount = budget.amount *
+          amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, budget.walletFk);
 
-      final budgetTransactions = await database.getAllTransactions(
+      final budgetTransactions = await _getTransactionsInRange(
         start: budgetStart,
         end: budgetEnd,
         paidOnly: true,
@@ -109,38 +148,40 @@ class FinancialScoreCalculator {
 
       double actualSpending = 0;
       for (var t in budgetTransactions) {
-        actualSpending += t.amount.abs() * amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, t.walletFk);
+        actualSpending += t.amount.abs() *
+            amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, t.walletFk);
       }
-
-      totalActualSpendingInBudgets += actualSpending;
 
       if (budgetAmount > 0 && actualSpending <= budgetAmount) {
         budgetsWithinLimit++;
       }
     }
 
-    double budgetAdherence = totalActiveBudgets > 0 
-        ? (budgetsWithinLimit / totalActiveBudgets) 
+    double budgetAdherence = totalActiveBudgets > 0
+        ? (budgetsWithinLimit / totalActiveBudgets)
         : 0.5; // Default if no budgets
     int budgetScore = (budgetAdherence * 25).round();
-    debugPrint('🎯 Budget adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}% → Score: $budgetScore/25');
+    debugPrint(
+        '🎯 Budget adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}% → Score: $budgetScore/25');
 
     // Calculate expense stability (0-25 points)
     // Lower variance = higher score
     double stabilityScore = 25.0;
     if (monthlySpending.length >= 2) {
       final spendingValues = monthlySpending.values.toList();
-      final avg = spendingValues.reduce((a, b) => a + b) / spendingValues.length;
-      
+      final avg =
+          spendingValues.reduce((a, b) => a + b) / spendingValues.length;
+
       if (avg > 0) {
         double variance = 0;
         for (var value in spendingValues) {
           variance += ((value - avg) / avg) * ((value - avg) / avg);
         }
         variance = variance / spendingValues.length;
-        
+
         // Lower variance = higher score (max 25 points)
-        stabilityScore = (25.0 * (1.0 - variance.clamp(0.0, 1.0))).round().toDouble();
+        stabilityScore =
+            (25.0 * (1.0 - variance.clamp(0.0, 1.0))).round().toDouble();
       }
     }
     int stabilityScoreInt = stabilityScore.round();
@@ -184,10 +225,26 @@ class FinancialScoreCalculator {
     required int totalScore,
   }) {
     return {
-      'savingsScore': {'value': savingsScore, 'max': 30, 'tip': _getSavingsTip(savingsScore)},
-      'debtScore': {'value': debtScore, 'max': 20, 'tip': _getDebtTip(debtScore)},
-      'budgetScore': {'value': budgetScore, 'max': 25, 'tip': _getBudgetTip(budgetScore)},
-      'stabilityScore': {'value': stabilityScore, 'max': 25, 'tip': _getStabilityTip(stabilityScore)},
+      'savingsScore': {
+        'value': savingsScore,
+        'max': 30,
+        'tip': _getSavingsTip(savingsScore)
+      },
+      'debtScore': {
+        'value': debtScore,
+        'max': 20,
+        'tip': _getDebtTip(debtScore)
+      },
+      'budgetScore': {
+        'value': budgetScore,
+        'max': 25,
+        'tip': _getBudgetTip(budgetScore)
+      },
+      'stabilityScore': {
+        'value': stabilityScore,
+        'max': 25,
+        'tip': _getStabilityTip(stabilityScore)
+      },
       'totalScore': totalScore,
       'grade': getGrade(totalScore),
     };
@@ -201,13 +258,17 @@ class FinancialScoreCalculator {
 
   String _getDebtTip(int score) {
     if (score >= 15) return 'Low debt level. Great job!';
-    if (score >= 10) return 'Moderate debt. Consider paying down high-interest debt first.';
+    if (score >= 10) {
+      return 'Moderate debt. Consider paying down high-interest debt first.';
+    }
     return 'High debt level. Create a debt repayment plan.';
   }
 
   String _getBudgetTip(int score) {
     if (score >= 20) return 'Excellent budget adherence!';
-    if (score >= 15) return 'Good budget control. Review categories where you overspend.';
+    if (score >= 15) {
+      return 'Good budget control. Review categories where you overspend.';
+    }
     return 'Work on staying within your budget limits.';
   }
 

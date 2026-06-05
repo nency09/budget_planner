@@ -860,6 +860,7 @@ class WidgetSettings extends StatelessWidget {
           title: "widget-background-opacity".tr(),
           icon: appStateSettings["outlinedIcons"]
               ? Icons.blur_on_outlined
+              
               : Icons.blur_on_rounded,
           descriptionWidget: Container(
             height: 28,

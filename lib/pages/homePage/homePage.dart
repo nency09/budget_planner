@@ -259,33 +259,34 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     Padding(
                       padding: EdgeInsetsDirectional.only(top: 5),
                       child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        useSmallBanner
-                            ? Expanded(
-                                child: HomePageWelcomeBannerSmall(
-                                  showUsername: showUsername,
-                                  showGreeting: showGreeting,
-                                  username: appStateSettings["username"] ?? "",
-                                ),
-                              )
-                            : SizedBox.shrink(),
-                        Tooltip(
-                          message: "edit-home".tr(),
-                          child: IconButton(
-                            padding: EdgeInsetsDirectional.all(8),
-                            onPressed: () {
-                              pushRoute(context, EditHomePage());
-                            },
-                            icon: Icon(appStateSettings["outlinedIcons"]
-                                ? Icons.more_vert_outlined
-                                : Icons.more_vert_rounded),
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          useSmallBanner
+                              ? Expanded(
+                                  child: HomePageWelcomeBannerSmall(
+                                    showUsername: showUsername,
+                                    showGreeting: showGreeting,
+                                    username:
+                                        appStateSettings["username"] ?? "",
+                                  ),
+                                )
+                              : SizedBox.shrink(),
+                          Tooltip(
+                            message: "edit-home".tr(),
+                            child: IconButton(
+                              padding: EdgeInsetsDirectional.all(8),
+                              onPressed: () {
+                                pushRoute(context, EditHomePage());
+                              },
+                              icon: Icon(appStateSettings["outlinedIcons"]
+                                  ? Icons.more_vert_outlined
+                                  : Icons.more_vert_rounded),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     ),
                     // Wipe all remaining pixels off - sometimes graphics artifacts are left behind
                     Container(
@@ -311,16 +312,19 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  HomePageUsername(
-                                    animationControllerHeader:
-                                        _animationControllerHeader,
-                                    animationControllerHeader2:
-                                        _animationControllerHeader2,
-                                    showUsername: showUsername,
-                                    showGreeting: showGreeting,
-                                    enterNameBottomSheet: enterNameBottomSheet,
-                                    username:
-                                        appStateSettings["username"] ?? "",
+                                  Expanded(
+                                    child: HomePageUsername(
+                                      animationControllerHeader:
+                                          _animationControllerHeader,
+                                      animationControllerHeader2:
+                                          _animationControllerHeader2,
+                                      showUsername: showUsername,
+                                      showGreeting: showGreeting,
+                                      enterNameBottomSheet:
+                                          enterNameBottomSheet,
+                                      username:
+                                          appStateSettings["username"] ?? "",
+                                    ),
                                   ),
                                 ],
                               ),

@@ -123,6 +123,8 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
           errorMessage = "No account found with this email address";
         } else if (e.toString().contains('wrong-password')) {
           errorMessage = "Incorrect password. Please try again";
+        } else if (e.toString().contains('invalid-credential')) {
+          errorMessage = "Invalid email or password. Please try again";
         } else if (e.toString().contains('email-already-in-use')) {
           errorMessage = "An account already exists with this email address";
         } else if (e.toString().contains('weak-password')) {
@@ -137,6 +139,13 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
               "Authentication service is temporarily unavailable. Please try again later";
         } else if (e.toString().contains('user-disabled')) {
           errorMessage = "This account has been disabled";
+        } else if (e.toString().contains('operation-not-allowed')) {
+          errorMessage =
+              "Email/password sign-in is not enabled for this Firebase project";
+        } else if (e.toString().contains('network-request-failed')) {
+          errorMessage = "Please check your internet connection and try again";
+        } else if (e.toString().contains('too-many-requests')) {
+          errorMessage = "Too many attempts. Please wait and try again";
         }
 
         openSnackbar(SnackbarMessage(title: errorMessage));

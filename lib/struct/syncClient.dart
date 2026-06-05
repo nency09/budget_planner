@@ -6,6 +6,7 @@ import 'package:budget/database/tables.dart';
 import 'package:budget/functions.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/settings.dart';
+import 'package:budget/services/email_auth_service.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
 import 'package:budget/widgets/navigationFramework.dart';
 import 'package:budget/widgets/openBottomSheet.dart';
@@ -80,6 +81,9 @@ Future<bool> createSyncBackup(
   if (appStateSettings["hasSignedIn"] == false) return false;
   if (errorSigningInDuringCloud == true) return false;
   if (appStateSettings["backupSync"] == false) return false;
+  if (EmailAuthService.isEmailPasswordUser() && googleUser == null) {
+    return false;
+  }
   if (changeMadeSync == true && appStateSettings["syncEveryChange"] == false)
     return false;
   // create the auto syncs after 10 seconds of no changes
@@ -126,11 +130,6 @@ Future<bool> createSyncBackup(
   final authHeaders = await googleUser!.authHeaders;
   final authenticateClient = GoogleAuthClient(authHeaders);
   drive.DriveApi driveApi = drive.DriveApi(authenticateClient);
-  if (driveApi == null) {
-    if (changeMadeSync)
-      loadingIndeterminateKey.currentState?.setVisibility(false);
-    throw "Failed to login to Google Drive";
-  }
 
   drive.FileList fileList = await driveApi.files.list(
       spaces: 'appDataFolder', $fields: 'files(id, name, modifiedTime, size)');
@@ -190,6 +189,9 @@ Future<dynamic> cancelAndPreventSyncOperation() async {
 Future<bool> runForceSignIn(BuildContext context) async {
   if (appStateSettings["forceAutoLogin"] == false) return false;
   if (appStateSettings["hasSignedIn"] == false) return false;
+  if (EmailAuthService.isEmailPasswordUser() && googleUser == null) {
+    return false;
+  }
   return await signInGoogle(
     gMailPermissions: false,
     waitForCompletion: false,
@@ -220,6 +222,9 @@ Future<bool> _syncData(BuildContext context) async {
   if (appStateSettings["backupSync"] == false) return false;
   if (appStateSettings["hasSignedIn"] == false) return false;
   if (errorSigningInDuringCloud == true) return false;
+  if (EmailAuthService.isEmailPasswordUser() && googleUser == null) {
+    return false;
+  }
 
   // We only want to prevent this if silent sign in, otherwise we can show the user the google login popup every time on web?
   // Prevent sign-in on web - background sign-in cannot access Google Drive etc.
@@ -247,9 +252,6 @@ Future<bool> _syncData(BuildContext context) async {
   final authHeaders = await googleUser!.authHeaders;
   final authenticateClient = GoogleAuthClient(authHeaders);
   drive.DriveApi driveApi = drive.DriveApi(authenticateClient);
-  if (driveApi == null) {
-    throw "Failed to login to Google Drive";
-  }
 
   await createSyncBackup();
 
