@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "187822421661-ob7uir2e87lgja8dqgs099o2nol2b1ji.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fingenie.budgettracker",
+            "certificate_hash": "12ec38b4db66c11f88c31f62f696e78fdade105c"
+          }
+        },
+        {
           "client_id": "187822421661-dhtjq77fflpnj294frk1nmij1bob8i1a.apps.googleusercontent.com",
           "client_type": 3
         }
