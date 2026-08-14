@@ -3,12 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// Groq AI Provider - Fast, free alternative to Gemini
-/// 
+///
 /// Free tier: 14,400 requests per day
 /// Get API key: https://console.groq.com/keys
 class GroqProvider {
   String? _apiKey;
-  static const String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
+  static const String _baseUrl =
+      'https://api.groq.com/openai/v1/chat/completions';
   static const String _model = 'llama-3.1-8b-instant'; // Fast and free
 
   void configure({required String apiKey}) {
@@ -30,27 +31,27 @@ class GroqProvider {
 
     debugPrint('🚀 GroqProvider: Making API call...');
     debugPrint('GroqProvider: Model: $_model');
-    debugPrint('GroqProvider: API key length: ${_apiKey!.length}');
-    debugPrint('GroqProvider: API key starts with: ${_apiKey!.substring(0, 4)}...');
 
     try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Authorization': 'Bearer $_apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': _model,
-          'messages': [
-            {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': userPrompt},
-          ],
-          'temperature': 0.3,
-          'max_tokens': expectJson ? 1000 : 500,
-          if (expectJson) 'response_format': {'type': 'json_object'},
-        }),
-      ).timeout(Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse(_baseUrl),
+            headers: {
+              'Authorization': 'Bearer $_apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'model': _model,
+              'messages': [
+                {'role': 'system', 'content': systemPrompt},
+                {'role': 'user', 'content': userPrompt},
+              ],
+              'temperature': 0.3,
+              'max_tokens': expectJson ? 1000 : 500,
+              if (expectJson) 'response_format': {'type': 'json_object'},
+            }),
+          )
+          .timeout(Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -66,7 +67,8 @@ class GroqProvider {
         debugPrint('❌ GroqProvider: API error ${response.statusCode}');
         debugPrint('GroqProvider: Response body: ${response.body}');
         if (response.statusCode == 401) {
-          debugPrint('❌ GroqProvider: Invalid API key - check your GROQ_API_KEY in .env');
+          debugPrint(
+              '❌ GroqProvider: Invalid API key - check your GROQ_API_KEY in .env');
         } else if (response.statusCode == 429) {
           debugPrint('⚠️ GroqProvider: Rate limit exceeded');
         } else if (response.statusCode == 400) {
@@ -79,7 +81,8 @@ class GroqProvider {
       if (e.toString().contains('TimeoutException')) {
         debugPrint('⚠️ GroqProvider: Request timed out after 30 seconds');
       } else if (e.toString().contains('SocketException')) {
-        debugPrint('⚠️ GroqProvider: Network error - check internet connection');
+        debugPrint(
+            '⚠️ GroqProvider: Network error - check internet connection');
       }
     }
     return null;

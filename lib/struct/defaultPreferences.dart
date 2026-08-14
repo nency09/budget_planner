@@ -163,8 +163,10 @@ Future<Map<String, dynamic>> getDefaultPreferences() async {
     "quietHoursEnd": 8, // 8 AM
     "lastWeeklySummary": null,
     "lastSavingsOpportunity": null,
+    "lastPositiveWin": null,
     "lastBudgetWarning": null,
     "lastReactivation": null,
+    "scheduledSmartSubscriptionIds": [],
     "materialYou": supportsSystemColor(),
     "colorTintCategoryIcon": false,
     "sendTransactionsToServerQueue": {},

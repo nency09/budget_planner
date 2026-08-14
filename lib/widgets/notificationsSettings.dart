@@ -9,6 +9,7 @@ import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/initializeNotifications.dart';
 import 'package:budget/struct/notificationsGlobal.dart';
 import 'package:budget/struct/settings.dart';
+import 'package:budget/services/smart_notifications_service.dart';
 import 'package:budget/widgets/animatedExpanded.dart';
 import 'package:budget/widgets/framework/popupFramework.dart';
 import 'package:budget/widgets/openBottomSheet.dart';
@@ -70,10 +71,16 @@ class _DailyNotificationsSettingsState
             await updateSettings("notifications", value,
                 updateGlobalState: false);
             if (value == true) {
-              await initializeNotificationsPlatform();
+              final permissionGranted = await initializeNotificationsPlatform();
               await setDailyNotifications(context);
+              if (permissionGranted) {
+                await SmartNotificationsService()
+                    .initializeSmartNotifications();
+                await SmartNotificationsService().runDailyChecks();
+              }
             } else {
               await cancelDailyNotification();
+              await SmartNotificationsService().cancelAllSmartNotifications();
             }
             setState(() {
               notificationsEnabled = !notificationsEnabled;

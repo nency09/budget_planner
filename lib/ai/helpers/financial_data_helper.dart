@@ -11,21 +11,24 @@ class FinancialDataHelper {
     DateTime end,
   ) async {
     final allTransactions = await database.allTransactions;
-    debugPrint('📊 FinancialDataHelper: Total transactions in database: ${allTransactions.length}');
-    
+    debugPrint(
+        '📊 FinancialDataHelper: Total transactions in database: ${allTransactions.length}');
+
     final startDate = start.subtract(Duration(seconds: 1));
     final endDate = end.add(Duration(days: 1));
-    
+
     final filtered = allTransactions.where((t) {
-      final isInRange = t.dateCreated.isAfter(startDate) && 
-                       t.dateCreated.isBefore(endDate);
+      final isInRange =
+          t.dateCreated.isAfter(startDate) && t.dateCreated.isBefore(endDate);
       final isPaid = t.paid;
       return isInRange && isPaid;
     }).toList();
-    
-    debugPrint('📊 FinancialDataHelper: Transactions in range (${start.toString().substring(0, 10)} to ${end.toString().substring(0, 10)}): ${filtered.length}');
-    debugPrint('📊 FinancialDataHelper: Date range - Start: $startDate, End: $endDate');
-    
+
+    debugPrint(
+        '📊 FinancialDataHelper: Transactions in range (${start.toString().substring(0, 10)} to ${end.toString().substring(0, 10)}): ${filtered.length}');
+    debugPrint(
+        '📊 FinancialDataHelper: Date range - Start: $startDate, End: $endDate');
+
     return filtered;
   }
 
@@ -46,8 +49,9 @@ class FinancialDataHelper {
     int incomeCount = 0;
     int expenseCount = 0;
 
-    debugPrint('💰 FinancialDataHelper: Processing ${transactions.length} transactions...');
-    
+    debugPrint(
+        '💰 FinancialDataHelper: Processing ${transactions.length} transactions...');
+
     for (var transaction in transactions) {
       final ratio = amountRatioToPrimaryCurrencyGivenPk(
         allWalletsObj,
@@ -58,15 +62,18 @@ class FinancialDataHelper {
       if (transaction.income) {
         totalIncome += amount;
         incomeCount++;
-        debugPrint('  💵 Income: ${transaction.name} = ₹${amount.toStringAsFixed(2)}');
+        debugPrint(
+            '  💵 Income: ${transaction.name} = ₹${amount.toStringAsFixed(2)}');
       } else {
         totalExpenses += amount;
         expenseCount++;
-        debugPrint('  💸 Expense: ${transaction.name} = ₹${amount.toStringAsFixed(2)}');
+        debugPrint(
+            '  💸 Expense: ${transaction.name} = ₹${amount.toStringAsFixed(2)}');
       }
     }
 
-    debugPrint('💰 FinancialDataHelper: RESULTS - Income: ₹${totalIncome.toStringAsFixed(2)} ($incomeCount transactions), Expenses: ₹${totalExpenses.toStringAsFixed(2)} ($expenseCount transactions)');
+    debugPrint(
+        '💰 FinancialDataHelper: RESULTS - Income: ₹${totalIncome.toStringAsFixed(2)} ($incomeCount transactions), Expenses: ₹${totalExpenses.toStringAsFixed(2)} ($expenseCount transactions)');
 
     return {
       'income': totalIncome,
@@ -88,7 +95,8 @@ class FinancialDataHelper {
 
     Map<String, double> categoryTotals = {};
 
-    debugPrint('📂 FinancialDataHelper: Calculating category breakdown from ${transactions.length} transactions...');
+    debugPrint(
+        '📂 FinancialDataHelper: Calculating category breakdown from ${transactions.length} transactions...');
 
     for (var transaction in transactions) {
       if (!transaction.income && transaction.categoryFk != "0") {
@@ -100,7 +108,8 @@ class FinancialDataHelper {
         final amount = transaction.amount.abs() * ratio;
         categoryTotals[category.name] =
             (categoryTotals[category.name] ?? 0) + amount;
-        debugPrint('  📁 ${category.name}: +₹${amount.toStringAsFixed(2)} (Total: ₹${categoryTotals[category.name]!.toStringAsFixed(2)})');
+        debugPrint(
+            '  📁 ${category.name}: +₹${amount.toStringAsFixed(2)} (Total: ₹${categoryTotals[category.name]!.toStringAsFixed(2)})');
       }
     }
 
@@ -109,14 +118,19 @@ class FinancialDataHelper {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // Calculate total for percentage calculation
-    final totalSpending = sorted.fold<double>(0.0, (sum, entry) => sum + entry.value);
+    final totalSpending =
+        sorted.fold<double>(0.0, (sum, entry) => sum + entry.value);
 
-    debugPrint('📂 FinancialDataHelper: Category breakdown - ${sorted.length} categories');
-    debugPrint('📂 FinancialDataHelper: Total spending: ₹${totalSpending.toStringAsFixed(2)}');
-    
+    debugPrint(
+        '📂 FinancialDataHelper: Category breakdown - ${sorted.length} categories');
+    debugPrint(
+        '📂 FinancialDataHelper: Total spending: ₹${totalSpending.toStringAsFixed(2)}');
+
     final result = sorted.map((e) {
-      final percentage = totalSpending > 0 ? (e.value / totalSpending * 100) : 0.0;
-      debugPrint('  📊 ${e.key}: ₹${e.value.toStringAsFixed(2)} (${percentage.toStringAsFixed(1)}%)');
+      final percentage =
+          totalSpending > 0 ? (e.value / totalSpending * 100) : 0.0;
+      debugPrint(
+          '  📊 ${e.key}: ₹${e.value.toStringAsFixed(2)} (${percentage.toStringAsFixed(1)}%)');
       return {
         'category': e.key,
         'name': e.key, // Also include 'name' for prompt compatibility
@@ -166,12 +180,15 @@ class FinancialDataHelper {
 
       int budgetsWithinLimit = 0;
       int totalBudgets = 0;
+      final allWallets = await database.getAllWallets();
+      final allWalletsObj = AllWallets(
+        list: allWallets,
+        indexedByPk: {for (final wallet in allWallets) wallet.walletPk: wallet},
+      );
 
       for (var budget in budgets) {
         final startDate = budget.startDate;
         final endDate = budget.endDate;
-        // Skip budgets without date range
-        if (startDate == null || endDate == null) continue;
 
         // Check if budget period overlaps with our date range
         if (startDate.isAfter(end) || endDate.isBefore(start)) {
@@ -180,34 +197,50 @@ class FinancialDataHelper {
 
         totalBudgets++;
 
+        // Only inspect the overlap with the period being analysed. Counting a
+        // whole recurring/custom budget here makes historical scores depend on
+        // transactions outside the requested range.
+        final effectiveStart = startDate.isAfter(start) ? startDate : start;
+        final effectiveEnd = endDate.isBefore(end) ? endDate : end;
+
         // Get actual spending for this budget
         final budgetTransactions = await _getTransactionsInRange(
-          startDate,
-          endDate,
-        );
-
-        final allWallets = await database.getAllWallets();
-        final allWalletsObj = AllWallets(
-          list: allWallets,
-          indexedByPk: {for (var w in allWallets) w.walletPk: w},
+          effectiveStart,
+          effectiveEnd,
         );
 
         double actualSpending = 0;
         for (var t in budgetTransactions) {
-          if (!t.income &&
-              t.paid &&
-              (t.sharedReferenceBudgetPk == budget.budgetPk ||
-                  budget.budgetPk == "0")) {
-            final ratio = amountRatioToPrimaryCurrencyGivenPk(
-              allWalletsObj,
-              t.walletFk,
-            );
-            actualSpending += t.amount.abs() * ratio;
-          }
+          if (t.income || !t.paid) continue;
+
+          final isExplicitBudgetTransaction =
+              t.sharedReferenceBudgetPk == budget.budgetPk;
+          final categoryMatches = (budget.categoryFks == null ||
+                  budget.categoryFks!.isEmpty ||
+                  budget.categoryFks!.contains(t.categoryFk)) &&
+              (budget.categoryFksExclude == null ||
+                  budget.categoryFksExclude!.isEmpty ||
+                  !budget.categoryFksExclude!.contains(t.categoryFk));
+          final walletMatches = budget.walletFks == null ||
+              budget.walletFks!.isEmpty ||
+              budget.walletFks!.contains(t.walletFk);
+          final isExcluded =
+              t.budgetFksExclude?.contains(budget.budgetPk) ?? false;
+
+          final belongsToBudget = budget.addedTransactionsOnly
+              ? isExplicitBudgetTransaction
+              : categoryMatches && walletMatches && !isExcluded;
+          if (!belongsToBudget) continue;
+
+          actualSpending += t.amount.abs() *
+              amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, t.walletFk);
         }
 
         // Check if within budget limit
-        if (budget.amount > 0 && actualSpending <= budget.amount) {
+        final budgetAmountInPrimaryCurrency = budget.amount *
+            amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, budget.walletFk);
+        if (budgetAmountInPrimaryCurrency > 0 &&
+            actualSpending <= budgetAmountInPrimaryCurrency) {
           budgetsWithinLimit++;
         }
       }
@@ -253,8 +286,9 @@ class FinancialDataHelper {
 
       final monthName = monthNames[monthStart.month - 1];
       final total = data['expenses'] ?? 0.0;
-      debugPrint('📅 Historical month ${monthName}: ₹${total.toStringAsFixed(2)}');
-      
+      debugPrint(
+          '📅 Historical month ${monthName}: ₹${total.toStringAsFixed(2)}');
+
       history.add({
         'month': monthName,
         'total': total,
@@ -270,13 +304,18 @@ class FinancialDataHelper {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = now;
 
-    final breakdown = await getCategoryBreakdown(start: monthStart, end: monthEnd);
-    
+    final breakdown =
+        await getCategoryBreakdown(start: monthStart, end: monthEnd);
+
     // Ensure 'name' field exists for prediction prompt compatibility
-    return breakdown.map((item) => {
-      'category': item['category'],
-      'name': item['name'] ?? item['category'], // Use name if available, fallback to category
-      'amount': item['amount'],
-    }).toList();
+    return breakdown
+        .map((item) => {
+              'category': item['category'],
+              'name': item['name'] ??
+                  item[
+                      'category'], // Use name if available, fallback to category
+              'amount': item['amount'],
+            })
+        .toList();
   }
 }

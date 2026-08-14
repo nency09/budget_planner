@@ -574,17 +574,16 @@ class ManageSubscription extends StatelessWidget {
   }
 }
 
-void listenToPurchaseUpdated({
+Future<void> listenToPurchaseUpdated({
   required List<PurchaseDetails> purchaseDetailsList,
   required BuildContext context,
   required bool popRouteWithPurchase,
-}) {
-  // ignore: avoid_function_literals_in_foreach_calls
-  purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
+}) async {
+  for (final purchaseDetails in purchaseDetailsList) {
     if (productIDs.values.toSet().contains(purchaseDetails.productID)) {
       if (purchaseDetails.status == PurchaseStatus.purchased ||
           purchaseDetails.status == PurchaseStatus.restored) {
-        updateSettings("purchaseID", purchaseDetails.productID,
+        await updateSettings("purchaseID", purchaseDetails.productID,
             updateGlobalState: false, pagesNeedingRefresh: [3]);
         print("Purchased " + purchaseDetails.productID);
         if (popRouteWithPurchase == true) {
@@ -618,7 +617,7 @@ void listenToPurchaseUpdated({
         }
       }
     }
-  });
+  }
 }
 
 Future<Map<String, ProductDetails>> initializeStoreAndPurchases(
@@ -632,10 +631,10 @@ Future<Map<String, ProductDetails>> initializeStoreAndPurchases(
 
       Stream<List<PurchaseDetails>> purchaseUpdated =
           InAppPurchase.instance.purchaseStream;
-      purchaseListener?.cancel();
+      await purchaseListener?.cancel();
       purchaseListener = purchaseUpdated.listen(
-        (purchaseDetailsList) {
-          listenToPurchaseUpdated(
+        (purchaseDetailsList) async {
+          await listenToPurchaseUpdated(
             purchaseDetailsList: purchaseDetailsList,
             context: context,
             popRouteWithPurchase: popRouteWithPurchase,
@@ -650,6 +649,7 @@ Future<Map<String, ProductDetails>> initializeStoreAndPurchases(
           purchaseListener = null;
         },
       );
+      storeProducts = {};
       final ProductDetailsResponse response = await InAppPurchase.instance
           .queryProductDetails(productIDs.values.toSet());
       if (response.notFoundIDs.isNotEmpty) {
@@ -709,8 +709,7 @@ showHelpRestorePopup(BuildContext context) {
       bool openResult = await openUrl('mailto:dapperappdeveloper@gmail.com');
       if (openResult == false) copyToClipboard("dapperappdeveloper@gmail.com");
     },
-    onExtra: () =>
-        openUrl("https://vurlex.in/faq.html#restoring-purchases"),
+    onExtra: () => openUrl("https://vurlex.in/faq.html#restoring-purchases"),
     onExtraLabel: "FAQ".tr(),
   );
 }
@@ -1403,7 +1402,6 @@ class PremiumBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) return SizedBox.shrink();
     double borderRadius = 15;
     bool purchased = appStateSettings["purchaseID"] != null;
 

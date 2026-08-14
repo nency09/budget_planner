@@ -36,6 +36,7 @@ import 'package:budget/struct/navBarIconsData.dart';
 import 'package:budget/struct/quickActions.dart';
 import 'package:budget/struct/settings.dart';
 import 'package:budget/struct/shareBudget.dart';
+import 'package:budget/services/smart_notifications_service.dart';
 import 'package:budget/struct/syncClient.dart';
 import 'package:budget/widgets/accountAndBackup.dart';
 import 'package:budget/widgets/bottomNavBar.dart';
@@ -430,7 +431,8 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
       bool isDatabaseCorruptedPopupShown = openDatabaseCorruptedPopup(context);
       if (isDatabaseCorruptedPopupShown) return;
 
-      await initializeNotificationsPlatform();
+      final notificationPermissionGranted =
+          await initializeNotificationsPlatform();
 
       bool isChangelogShown = showChangelog(context);
       bool isRatingPopupShown = false;
@@ -440,6 +442,14 @@ class PageNavigationFrameworkState extends State<PageNavigationFramework> {
 
       await setDailyNotifications(context);
       await initializeDefaultDatabase();
+      if (notificationPermissionGranted) {
+        try {
+          await SmartNotificationsService().initializeSmartNotifications();
+          await SmartNotificationsService().runDailyChecks();
+        } catch (error) {
+          debugPrint('Unable to initialize smart notifications: $error');
+        }
+      }
       runNotificationPayLoads(context);
       runQuickActionsPayLoads(context);
       initializeLocalizedMonthNames();

@@ -13,7 +13,6 @@ import 'package:budget/widgets/util/onAppResume.dart';
 import 'package:budget/widgets/util/watchForDayChange.dart';
 import 'package:budget/widgets/watchAllWallets.dart';
 import 'package:budget/database/tables.dart';
-import 'package:budget/database/reduceTransactionsForTesting.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:budget/struct/settings.dart';
 import 'package:budget/struct/notificationsGlobal.dart';
@@ -40,7 +39,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'ai/services/ai_engine.dart';
 import 'ai/services/groq_ai_service.dart';
-import 'services/smart_notifications_service.dart';
 
 // Requires hot restart when changed
 const bool enableDevicePreview = false;
@@ -79,7 +77,7 @@ Future<void> _initializeApp() async {
   captureLogs(() async {
     WidgetsFlutterBinding.ensureInitialized();
     debugPrint('Starting app initialization...');
-    
+
     // Load environment variables (e.g. GEMINI_API_KEY from .env)
     // Wrap in try-catch to prevent app crash if .env file is missing
     try {
@@ -90,7 +88,9 @@ Future<void> _initializeApp() async {
       } catch (_) {
         // If root fails, try loading from assets (for mobile builds)
         try {
-          await dotenv.load(fileName: 'assets/.env').timeout(Duration(seconds: 3));
+          await dotenv
+              .load(fileName: 'assets/.env')
+              .timeout(Duration(seconds: 3));
           debugPrint('Successfully loaded .env file from assets');
         } catch (_) {
           debugPrint('Could not load .env from either location');
@@ -100,7 +100,7 @@ Future<void> _initializeApp() async {
       debugPrint('Warning: Could not load .env file: $e');
       // Continue without .env - AI features will be disabled
     }
-    
+
     debugPrint('Initializing Firebase...');
     try {
       await Firebase.initializeApp(
@@ -118,20 +118,21 @@ Future<void> _initializeApp() async {
         rethrow;
       }
     }
-    
+
     debugPrint('Initializing EasyLocalization...');
     await EasyLocalization.ensureInitialized().timeout(Duration(seconds: 5));
     debugPrint('EasyLocalization initialized');
-    
+
     debugPrint('Getting SharedPreferences...');
     try {
-      sharedPreferences = await SharedPreferences.getInstance().timeout(Duration(seconds: 5));
+      sharedPreferences =
+          await SharedPreferences.getInstance().timeout(Duration(seconds: 5));
       debugPrint('SharedPreferences loaded');
     } catch (e) {
       debugPrint('Error loading SharedPreferences: $e');
       rethrow;
     }
-    
+
     debugPrint('Constructing database...');
     try {
       database = await constructDb('db').timeout(Duration(seconds: 10));
@@ -140,33 +141,26 @@ Future<void> _initializeApp() async {
       debugPrint('Error constructing database: $e');
       rethrow;
     }
-    
+
     // NOTE: We no longer force-convert all wallets to INR here.
     // Wallets keep their original currencies (EUR, USD, INR, etc.),
     // and UI/AI use per-wallet currency logic via currencyFunctions.dart.
-    
-    // Reduce transactions to last 20 for easier AI verification
-    try {
-      await reduceTransactionsForTesting(keepCount: 20);
-      debugPrint('✅ Transaction reduction completed - keeping last 20 transactions for AI testing');
-    } catch (e) {
-      debugPrint('Warning: Could not reduce transactions: $e');
-    }
-    
+
     debugPrint('Initializing notifications...');
-    notificationPayload = await initializeNotifications().timeout(Duration(seconds: 5));
+    notificationPayload =
+        await initializeNotifications().timeout(Duration(seconds: 5));
     debugPrint('Notifications initialized');
-    
+
     entireAppLoaded = false;
-    
+
     debugPrint('Loading currency JSON...');
     await loadCurrencyJSON().timeout(Duration(seconds: 5));
     debugPrint('Currency JSON loaded');
-    
+
     debugPrint('Loading language names JSON...');
     await loadLanguageNamesJSON().timeout(Duration(seconds: 5));
     debugPrint('Language names JSON loaded');
-    
+
     debugPrint('Initializing settings...');
     await initializeSettings().timeout(Duration(seconds: 5));
     debugPrint('Settings initialized');
@@ -188,16 +182,7 @@ Future<void> _initializeApp() async {
         .compareTo((b.mostLikelyCategoryName ?? b.icon)));
     debugPrint('Icon objects sorted');
 
-    // Initialize Smart Notifications
-    debugPrint('Initializing Smart Notifications...');
-    try {
-      await SmartNotificationsService().initializeSmartNotifications();
-      debugPrint('Smart Notifications initialized');
-    } catch (e) {
-      debugPrint('Error initializing Smart Notifications: $e');
-    }
-
-    // Configure AI engine - Prioritizes Groq (free, no quota issues), falls back to Gemini
+    // Configure AI engine - prioritize Groq, then OpenAI, then Gemini.
     try {
       // Check for Groq API key first (recommended - free, no setup issues)
       final groqKey = dotenv.env['GROQ_API_KEY']?.trim();
@@ -207,40 +192,62 @@ Future<void> _initializeApp() async {
             (cleanKey.startsWith("'") && cleanKey.endsWith("'"))) {
           cleanKey = cleanKey.substring(1, cleanKey.length - 1);
         }
-        debugPrint('✅ Groq API key found in .env, configuring AIEngine with Groq');
-        AIEngine().configure(apiKey: cleanKey, providerType: AIProviderType.groq);
+        debugPrint(
+            '✅ Groq API key found in .env, configuring AIEngine with Groq');
+        AIEngine()
+            .configure(apiKey: cleanKey, providerType: AIProviderType.groq);
         // Also configure GroqAIService used by session-based AI chat.
         GroqAIService().configure(apiKey: cleanKey);
-        debugPrint('✅ AIEngine configured with Groq. isConfigured: ${AIEngine().isConfigured}');
+        debugPrint(
+            '✅ AIEngine configured with Groq. isConfigured: ${AIEngine().isConfigured}');
       } else {
-        // Only check Gemini if Groq key is not found
-        debugPrint('⚠️ Groq API key not found, checking for Gemini API key...');
-        final geminiKey = dotenv.env['GEMINI_API_KEY']?.trim();
-        
-        if (geminiKey != null && geminiKey.isNotEmpty) {
-          String cleanKey = geminiKey;
+        final openAIKey = dotenv.env['OPENAI_API_KEY']?.trim();
+        if (openAIKey != null && openAIKey.isNotEmpty) {
+          String cleanKey = openAIKey;
           if ((cleanKey.startsWith('"') && cleanKey.endsWith('"')) ||
               (cleanKey.startsWith("'") && cleanKey.endsWith("'"))) {
             cleanKey = cleanKey.substring(1, cleanKey.length - 1);
           }
-          debugPrint('✅ Gemini API key found in .env, configuring AIEngine with Gemini');
-          AIEngine().configure(apiKey: cleanKey, providerType: AIProviderType.gemini);
-          debugPrint('✅ AIEngine configured with Gemini. isConfigured: ${AIEngine().isConfigured}');
+          debugPrint(
+              '✅ OpenAI API key found in .env, configuring AIEngine with OpenAI');
+          AIEngine()
+              .configure(apiKey: cleanKey, providerType: AIProviderType.openai);
+          debugPrint(
+              '✅ AIEngine configured with OpenAI. isConfigured: ${AIEngine().isConfigured}');
         } else {
-          debugPrint('❌ No AI API key found in .env file');
-          debugPrint('💡 Add GROQ_API_KEY (recommended) or GEMINI_API_KEY to .env');
-          debugPrint('📋 Available env keys: ${dotenv.env.keys.toList()}');
+          debugPrint(
+              '⚠️ Groq/OpenAI API key not found, checking for Gemini API key...');
+          final geminiKey = dotenv.env['GEMINI_API_KEY']?.trim();
+
+          if (geminiKey != null && geminiKey.isNotEmpty) {
+            String cleanKey = geminiKey;
+            if ((cleanKey.startsWith('"') && cleanKey.endsWith('"')) ||
+                (cleanKey.startsWith("'") && cleanKey.endsWith("'"))) {
+              cleanKey = cleanKey.substring(1, cleanKey.length - 1);
+            }
+            debugPrint(
+                '✅ Gemini API key found in .env, configuring AIEngine with Gemini');
+            AIEngine().configure(
+                apiKey: cleanKey, providerType: AIProviderType.gemini);
+            debugPrint(
+                '✅ AIEngine configured with Gemini. isConfigured: ${AIEngine().isConfigured}');
+          } else {
+            debugPrint('❌ No AI API key found in .env file');
+            debugPrint(
+                '💡 Add GROQ_API_KEY (recommended), OPENAI_API_KEY, or GEMINI_API_KEY to .env');
+            debugPrint('📋 Available env keys: ${dotenv.env.keys.toList()}');
+          }
         }
       }
     } catch (e, stackTrace) {
       debugPrint('❌ Error configuring AI engine: $e');
       debugPrint('Stack trace: $stackTrace');
     }
-    
+
     debugPrint('Setting high refresh rate...');
     setHighRefreshRate();
     debugPrint('High refresh rate set');
-    
+
     debugPrint('Calling runApp...');
     runApp(
       DevicePreview(

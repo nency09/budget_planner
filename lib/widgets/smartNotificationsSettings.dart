@@ -1,6 +1,6 @@
 import 'package:budget/struct/settings.dart';
+import 'package:budget/services/smart_notifications_service.dart';
 import 'package:budget/widgets/settingsContainers.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// Smart Notifications Settings Widget
@@ -14,9 +14,12 @@ class SmartNotificationsSettings extends StatelessWidget {
       children: [
         SettingsContainerSwitch(
           title: "Weekly Money Story",
-          description: "Get a personalized AI summary of your spending every week",
-          onSwitched: (value) {
-            updateSettings("weeklyInsights", value, updateGlobalState: false);
+          description: "Get a weekly summary of your spending",
+          onSwitched: (value) async {
+            await updateSettings("weeklyInsights", value,
+                updateGlobalState: false);
+            await SmartNotificationsService()
+                .applySmartNotificationPreferences();
           },
           initialValue: appStateSettings["weeklyInsights"] ?? true,
           icon: appStateSettings["outlinedIcons"]
@@ -26,8 +29,9 @@ class SmartNotificationsSettings extends StatelessWidget {
         SettingsContainerSwitch(
           title: "Smart Savings Tips",
           description: "Get notified when we find ways to save money",
-          onSwitched: (value) {
-            updateSettings("savingsOpportunities", value, updateGlobalState: false);
+          onSwitched: (value) async {
+            await updateSettings("savingsOpportunities", value,
+                updateGlobalState: false);
           },
           initialValue: appStateSettings["savingsOpportunities"] ?? true,
           icon: appStateSettings["outlinedIcons"]
@@ -37,8 +41,9 @@ class SmartNotificationsSettings extends StatelessWidget {
         SettingsContainerSwitch(
           title: "Achievement Celebrations",
           description: "Celebrate when you reach goals and stay within budgets",
-          onSwitched: (value) {
-            updateSettings("goalReminders", value, updateGlobalState: false);
+          onSwitched: (value) async {
+            await updateSettings("goalReminders", value,
+                updateGlobalState: false);
           },
           initialValue: appStateSettings["goalReminders"] ?? true,
           icon: appStateSettings["outlinedIcons"]
@@ -48,8 +53,9 @@ class SmartNotificationsSettings extends StatelessWidget {
         SettingsContainerSwitch(
           title: "Budget Alerts",
           description: "Get gentle warnings when approaching budget limits",
-          onSwitched: (value) {
-            updateSettings("budgetAlerts", value, updateGlobalState: false);
+          onSwitched: (value) async {
+            await updateSettings("budgetAlerts", value,
+                updateGlobalState: false);
           },
           initialValue: appStateSettings["budgetAlerts"] ?? true,
           icon: appStateSettings["outlinedIcons"]
@@ -59,8 +65,9 @@ class SmartNotificationsSettings extends StatelessWidget {
         SettingsContainerSwitch(
           title: "Transaction Insights",
           description: "Get help categorizing large transactions",
-          onSwitched: (value) {
-            updateSettings("transactionInsights", value, updateGlobalState: false);
+          onSwitched: (value) async {
+            await updateSettings("transactionInsights", value,
+                updateGlobalState: false);
           },
           initialValue: appStateSettings["transactionInsights"] ?? true,
           icon: appStateSettings["outlinedIcons"]
@@ -70,8 +77,11 @@ class SmartNotificationsSettings extends StatelessWidget {
         SettingsContainerSwitch(
           title: "Subscription Reminders",
           description: "Get reminded before subscriptions renew",
-          onSwitched: (value) {
-            updateSettings("subscriptionReminders", value, updateGlobalState: false);
+          onSwitched: (value) async {
+            await updateSettings("subscriptionReminders", value,
+                updateGlobalState: false);
+            await SmartNotificationsService()
+                .applySmartNotificationPreferences();
           },
           initialValue: appStateSettings["subscriptionReminders"] ?? true,
           icon: appStateSettings["outlinedIcons"]
@@ -108,7 +118,10 @@ class QuietHoursSettings extends StatelessWidget {
               ),
             );
             if (time != null) {
-              updateSettings("quietHoursStart", time.hour, updateGlobalState: false);
+              await updateSettings("quietHoursStart", time.hour,
+                  updateGlobalState: false);
+              await SmartNotificationsService()
+                  .applySmartNotificationPreferences();
             }
           },
           afterWidget: Text(
@@ -134,7 +147,10 @@ class QuietHoursSettings extends StatelessWidget {
               ),
             );
             if (time != null) {
-              updateSettings("quietHoursEnd", time.hour, updateGlobalState: false);
+              await updateSettings("quietHoursEnd", time.hour,
+                  updateGlobalState: false);
+              await SmartNotificationsService()
+                  .applySmartNotificationPreferences();
             }
           },
           afterWidget: Text(

@@ -1,6 +1,6 @@
 import 'package:budget/ai/helpers/financial_summary_builder.dart';
 import 'package:budget/ai/helpers/finance_question_validator.dart';
-import 'package:budget/ai/services/groq_ai_service.dart';
+import 'package:budget/ai/services/ai_engine.dart';
 import 'package:budget/database/tables.dart';
 import 'package:budget/struct/databaseGlobal.dart';
 import 'package:drift/drift.dart';
@@ -48,7 +48,7 @@ class AIChatService {
   factory AIChatService() => _instance;
   AIChatService._internal();
 
-  final GroqAIService _groq = GroqAIService();
+  final AIEngine _ai = AIEngine();
 
   /// Create a new chat session. Optionally pass the first user message to use
   /// as the initial title.
@@ -255,10 +255,9 @@ class AIChatService {
         'Sorry, I could not generate a response right now. Please try again in a moment.';
 
     try {
-      final response = await _groq.chat(
+      final response = await _ai.chat(
         systemPrompt: systemPrompt,
         userPrompt: buffer.toString(),
-        maxTokens: 400,
       );
 
       String assistantText = (response == null || response.trim().isEmpty)

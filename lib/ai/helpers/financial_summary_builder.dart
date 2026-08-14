@@ -1,6 +1,7 @@
 import 'package:budget/ai/helpers/financial_data_helper.dart';
 import 'package:budget/database/tables.dart';
 import 'package:budget/struct/databaseGlobal.dart';
+import 'package:budget/struct/currencyFunctions.dart';
 import 'package:flutter/foundation.dart';
 
 /// Lightweight structured summary of the user's finances for AI prompts.
@@ -9,7 +10,8 @@ class FinancialSummary {
   final double monthlyIncome;
   final Map<String, double> categoryTotals;
   final double subscriptionTotal;
-  final List<Map<String, dynamic>> monthlyHistory; // e.g. [{month: 'Jan', total: 21000}, ...]
+  final List<Map<String, dynamic>>
+      monthlyHistory; // e.g. [{month: 'Jan', total: 21000}, ...]
 
   const FinancialSummary({
     required this.monthlySpending,
@@ -32,24 +34,28 @@ class FinancialSummary {
   /// Render a compact, human-readable summary string for prompts.
   String toPromptString({String currencySymbol = '₹'}) {
     final buffer = StringBuffer();
-    buffer.writeln('Monthly Income: $currencySymbol${monthlyIncome.toStringAsFixed(0)}');
-    buffer.writeln('Monthly Spending: $currencySymbol${monthlySpending.toStringAsFixed(0)}');
-    buffer.writeln('Subscriptions: $currencySymbol${subscriptionTotal.toStringAsFixed(0)}');
+    buffer.writeln(
+        'Monthly Income: $currencySymbol${monthlyIncome.toStringAsFixed(0)}');
+    buffer.writeln(
+        'Monthly Spending: $currencySymbol${monthlySpending.toStringAsFixed(0)}');
+    buffer.writeln(
+        'Subscriptions: $currencySymbol${subscriptionTotal.toStringAsFixed(0)}');
 
     if (categoryTotals.isNotEmpty) {
       buffer.writeln('\nSpending by category:');
-      categoryTotals.entries
-          .toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
-      for (final entry in categoryTotals.entries) {
-        buffer.writeln('- ${entry.key}: $currencySymbol${entry.value.toStringAsFixed(0)}');
+      final sortedCategories = categoryTotals.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      for (final entry in sortedCategories) {
+        buffer.writeln(
+            '- ${entry.key}: $currencySymbol${entry.value.toStringAsFixed(0)}');
       }
     }
 
     if (monthlyHistory.isNotEmpty) {
       buffer.writeln('\nLast months:');
       for (final m in monthlyHistory) {
-        buffer.writeln('- ${m['month']}: $currencySymbol${(m['total'] as num).toDouble().toStringAsFixed(0)}');
+        buffer.writeln(
+            '- ${m['month']}: $currencySymbol${(m['total'] as num).toDouble().toStringAsFixed(0)}');
       }
     }
 
@@ -85,15 +91,22 @@ class FinancialSummaryBuilder {
 
     // Subscription total (local detection: special types or recurring)
     final allTransactions = await database.allTransactions;
+    final allWallets = await database.getAllWallets();
+    final allWalletsObj = AllWallets(
+      list: allWallets,
+      indexedByPk: {for (final wallet in allWallets) wallet.walletPk: wallet},
+    );
     double subscriptionTotal = 0;
     for (final t in allTransactions) {
-      final isCurrentMonth = t.dateCreated.isAfter(monthStart) && t.dateCreated.isBefore(now);
+      final isCurrentMonth =
+          t.dateCreated.isAfter(monthStart) && t.dateCreated.isBefore(now);
       final isSubLike = !t.income &&
           (t.type == TransactionSpecialType.subscription ||
               t.type == TransactionSpecialType.repetitive ||
               (t.reoccurrence != null && t.periodLength != null));
       if (isCurrentMonth && isSubLike && t.paid) {
-        subscriptionTotal += t.amount.abs();
+        subscriptionTotal += t.amount.abs() *
+            amountRatioToPrimaryCurrencyGivenPk(allWalletsObj, t.walletFk);
       }
     }
 
@@ -109,8 +122,8 @@ class FinancialSummaryBuilder {
       monthlyHistory: monthlyHistory,
     );
 
-    debugPrint('📊 FinancialSummaryBuilder: Built summary: ${summary.toJson()}');
+    debugPrint(
+        '📊 FinancialSummaryBuilder: Built summary: ${summary.toJson()}');
     return summary;
   }
 }
-

@@ -43,18 +43,19 @@ class AIEngine {
 
   GenerativeModel? _model;
   String? _apiKey;
-  AIProviderType _providerType = AIProviderType.openai; // Default to OpenAI for Phase 1
+  AIProviderType _providerType =
+      AIProviderType.openai; // Default to OpenAI for Phase 1
   final GroqProvider _groqProvider = GroqProvider();
   final OpenAIProvider _openaiProvider = OpenAIProvider();
 
   /// Initialize with API key. Supports OpenAI (primary), Gemini, or Groq.
-  /// 
+  ///
   /// For OpenAI (Phase 1): Use OPENAI_API_KEY in .env (gpt-4o-mini)
   /// For Groq: Use GROQ_API_KEY in .env (free alternative)
   /// For Gemini: Use GEMINI_API_KEY in .env (requires billing setup)
   void configure({required String apiKey, AIProviderType? providerType}) {
     _apiKey = apiKey;
-    
+
     // Use provided provider type, or auto-detect based on key format
     if (providerType != null) {
       _providerType = providerType;
@@ -102,7 +103,16 @@ class AIEngine {
   }
 
   AIProviderType get providerType => _providerType;
-  
+
+  /// Send a general chat request through whichever provider was configured at
+  /// startup. This keeps all AI features on the same provider and rate limit.
+  Future<String?> chat({
+    required String systemPrompt,
+    required String userPrompt,
+  }) {
+    return _callAI(systemPrompt: systemPrompt, userPrompt: userPrompt);
+  }
+
   /// Get provider name as string for display
   String get providerName {
     switch (_providerType) {
@@ -121,7 +131,7 @@ class AIEngine {
 
   /// Categorize a transaction by merchant name.
   /// Runs ONCE per unique merchant — result is permanently cached in database.
-  /// 
+  ///
   /// Phase 1 Implementation: Uses database table instead of SharedPreferences
   Future<String?> categorizeTransaction({
     required String merchantName,
@@ -135,9 +145,11 @@ class AIEngine {
 
     // Check database cache first (Phase 1 requirement)
     try {
-      final cached = await database.getMerchantCategoryCache(normalizedMerchant);
+      final cached =
+          await database.getMerchantCategoryCache(normalizedMerchant);
       if (cached != null) {
-        debugPrint('✅ AIEngine: Found cached category for "$merchantName": ${cached.predictedCategory}');
+        debugPrint(
+            '✅ AIEngine: Found cached category for "$merchantName": ${cached.predictedCategory}');
         // Return the category name (String), not the cached object
         final String categoryName = cached.predictedCategory;
         // Validate it's still in the existing categories list
@@ -148,7 +160,8 @@ class AIEngine {
         if (match.isNotEmpty) {
           return match;
         } else {
-          debugPrint('⚠️ AIEngine: Cached category "$categoryName" no longer exists, will re-categorize');
+          debugPrint(
+              '⚠️ AIEngine: Cached category "$categoryName" no longer exists, will re-categorize');
         }
       }
     } catch (e) {
@@ -159,9 +172,14 @@ class AIEngine {
     try {
       final associatedTitles = await database.getAllAssociatedTitles();
       for (var associated in associatedTitles) {
-        if (merchantName.toLowerCase().contains(associated.title.toLowerCase()) ||
-            associated.title.toLowerCase().contains(merchantName.toLowerCase())) {
-          debugPrint('✅ AIEngine: Found category from Associated Titles: ${associated.categoryFk}');
+        if (merchantName
+                .toLowerCase()
+                .contains(associated.title.toLowerCase()) ||
+            associated.title
+                .toLowerCase()
+                .contains(merchantName.toLowerCase())) {
+          debugPrint(
+              '✅ AIEngine: Found category from Associated Titles: ${associated.categoryFk}');
           // Cache this in database for future use
           await database.createOrUpdateMerchantCategoryCache(
             merchantName: normalizedMerchant,
@@ -207,7 +225,8 @@ class AIEngine {
             predictedCategory: match,
             confidence: 0.9, // AI prediction confidence
           );
-          debugPrint('✅ AIEngine: Cached category "$match" for "$merchantName" in database');
+          debugPrint(
+              '✅ AIEngine: Cached category "$match" for "$merchantName" in database');
         } catch (e) {
           debugPrint('⚠️ AIEngine: Error caching category: $e');
         }
@@ -216,7 +235,7 @@ class AIEngine {
         debugPrint('⚠️ AIEngine: AI returned invalid category: "$category"');
       }
     }
-    
+
     // Fallback to "Other" if AI fails
     debugPrint('⚠️ AIEngine: AI categorization failed, using default "Other"');
     return null; // Let caller handle default
@@ -236,20 +255,23 @@ class AIEngine {
   }) async {
     // ALWAYS log the real data being used (even if cached)
     debugPrint('🤖 AIEngine: REAL DATA RECEIVED (calculated from database):');
-    debugPrint('   📅 Period: ${_formatDate(weekStart)} to ${_formatDate(weekEnd)}');
+    debugPrint(
+        '   📅 Period: ${_formatDate(weekStart)} to ${_formatDate(weekEnd)}');
     debugPrint('   💵 Income: ₹$totalIncome');
     debugPrint('   💸 Spent: ₹$totalSpent');
     debugPrint('   📂 Categories: ${categoryBreakdown.length}');
     for (var cat in categoryBreakdown) {
-      debugPrint('      - ${cat['name']}: ₹${cat['amount']} (${cat['percentage']}%)');
+      debugPrint(
+          '      - ${cat['name']}: ₹${cat['amount']} (${cat['percentage']}%)');
     }
     debugPrint('   ✅ This is 100% REAL data from your transaction database!');
-    
+
     // 1) Check persistent weekly insights table first (DB cache)
     try {
       final existing = await database.getWeeklyInsight(weekStart);
       if (existing != null) {
-        debugPrint('💾 Using cached weekly insight from database (week starting ${_formatDate(weekStart)})');
+        debugPrint(
+            '💾 Using cached weekly insight from database (week starting ${_formatDate(weekStart)})');
         return AIInsight(
           summary: existing.insightText,
           topTip: '', // Top tip is embedded in text for now
@@ -264,12 +286,13 @@ class AIEngine {
     final cacheKey = AICacheService.weeklyInsightKey(weekStart);
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
-      debugPrint('💾 Using cached weekly insight from AICacheService (week starting ${_formatDate(weekStart)})');
+      debugPrint(
+          '💾 Using cached weekly insight from AICacheService (week starting ${_formatDate(weekStart)})');
       return AIInsight.fromJson(cached);
     }
 
     debugPrint('🌐 Calling AI API with REAL data...');
-    
+
     final userPrompt = InsightsPrompt.user(
       startDate: _formatDate(weekStart),
       endDate: _formatDate(weekEnd),
@@ -277,10 +300,10 @@ class AIEngine {
       spent: totalSpent,
       categoryBreakdown: categoryBreakdown,
     );
-    
+
     debugPrint('🤖 AIEngine: Full prompt being sent to AI:');
     debugPrint(userPrompt);
-    
+
     final response = await _callGeminiJson(
       systemPrompt: InsightsPrompt.system(),
       userPrompt: userPrompt,
@@ -297,7 +320,8 @@ class AIEngine {
             weekEnd: weekEnd,
             insightText: insight.summary,
           );
-          debugPrint('✅ AIEngine: Saved weekly insight to database for week starting ${_formatDate(weekStart)}');
+          debugPrint(
+              '✅ AIEngine: Saved weekly insight to database for week starting ${_formatDate(weekStart)}');
         } catch (e) {
           debugPrint('AIEngine: Error saving weekly insight to database: $e');
         }
@@ -331,21 +355,24 @@ class AIEngine {
     debugPrint('🤖 AIEngine: REAL DATA RECEIVED (calculated from database):');
     debugPrint('   💵 Income: ₹$totalIncome');
     debugPrint('   💸 Expenses: ₹$totalExpenses');
-    debugPrint('   📊 Savings Rate: ${(savingsRate * 100).toStringAsFixed(1)}%');
-    debugPrint('   🎯 Budget Adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}%');
+    debugPrint(
+        '   📊 Savings Rate: ${(savingsRate * 100).toStringAsFixed(1)}%');
+    debugPrint(
+        '   🎯 Budget Adherence: ${(budgetAdherence * 100).toStringAsFixed(1)}%');
     debugPrint('   📂 Categories: $numCategories');
     debugPrint('   🔄 Recurring: $recurringExpenseCount');
     debugPrint('   ✅ This is 100% REAL data from your transaction database!');
-    
+
     final cacheKey = AICacheService.scoreKey(DateTime.now());
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
-      debugPrint('💾 Using cached AI response (data was recalculated from database above)');
+      debugPrint(
+          '💾 Using cached AI response (data was recalculated from database above)');
       return FinancialScore.fromJson(cached);
     }
 
     debugPrint('🌐 Calling AI API with REAL data...');
-    
+
     final userPrompt = ScorePrompt.user(
       income: totalIncome,
       expenses: totalExpenses,
@@ -354,10 +381,10 @@ class AIEngine {
       numCategories: numCategories,
       recurringCount: recurringExpenseCount,
     );
-    
+
     debugPrint('🤖 AIEngine: Full prompt being sent to AI:');
     debugPrint(userPrompt);
-    
+
     final response = await _callGeminiJson(
       systemPrompt: ScorePrompt.system(),
       userPrompt: userPrompt,
@@ -396,24 +423,25 @@ class AIEngine {
       debugPrint('      - ${cat['name']}: ₹${cat['amount']}');
     }
     debugPrint('   ✅ This is 100% REAL data from your transaction database!');
-    
+
     final cacheKey = AICacheService.predictionKey(DateTime.now());
     final cached = await _cache.get(cacheKey);
     if (cached != null) {
-      debugPrint('💾 Using cached AI response (data was recalculated from database above)');
+      debugPrint(
+          '💾 Using cached AI response (data was recalculated from database above)');
       return SpendingPrediction.fromJson(cached);
     }
 
     debugPrint('🌐 Calling AI API with REAL data...');
-    
+
     final userPrompt = PredictionPrompt.user(
       historicalMonths: historicalMonths,
       currentCategories: currentCategories,
     );
-    
+
     debugPrint('🤖 AIEngine: Full prompt being sent to AI:');
     debugPrint(userPrompt);
-    
+
     final response = await _callGeminiJson(
       systemPrompt: PredictionPrompt.system(),
       userPrompt: userPrompt,
@@ -471,16 +499,17 @@ class AIEngine {
     if (response != null) {
       try {
         final advice = AIAdvice.fromJson(response);
-        
+
         // Additional validation: check if AI response is finance-related
         if (!_isFinancialAdvice(advice.answer)) {
-          debugPrint('🚫 AIEngine: AI returned non-financial advice, replacing with rejection');
+          debugPrint(
+              '🚫 AIEngine: AI returned non-financial advice, replacing with rejection');
           return AIAdvice(
             answer: FinanceQuestionValidator.getRejectionMessage(),
             actionItems: [],
           );
         }
-        
+
         await _cache.set(cacheKey, advice.toJson(),
             ttl: const Duration(hours: 24));
         return advice;
@@ -494,29 +523,40 @@ class AIEngine {
   /// Check if the AI advice response appears to be finance-related.
   bool _isFinancialAdvice(String advice) {
     final lowerAdvice = advice.toLowerCase();
-    
+
     // If response contains rejection phrases, it's valid
-    if (lowerAdvice.contains('only help with') || 
-        lowerAdvice.contains('finance') || 
+    if (lowerAdvice.contains('only help with') ||
+        lowerAdvice.contains('finance') ||
         lowerAdvice.contains('budget') ||
         lowerAdvice.contains('financial')) {
       return true;
     }
-    
+
     // Check for obvious non-financial topics
     final nonFinancialIndicators = [
-      'capital of', 'president of', 'national animal',
-      'weather', 'recipe', 'movie', 'sports', 'celebrity',
-      'history of', 'geography', 'science', 'technology',
-      'programming', 'coding', 'software'
+      'capital of',
+      'president of',
+      'national animal',
+      'weather',
+      'recipe',
+      'movie',
+      'sports',
+      'celebrity',
+      'history of',
+      'geography',
+      'science',
+      'technology',
+      'programming',
+      'coding',
+      'software'
     ];
-    
+
     for (final indicator in nonFinancialIndicators) {
       if (lowerAdvice.contains(indicator)) {
         return false;
       }
     }
-    
+
     return true; // Assume it's financial if no clear non-financial indicators
   }
 
@@ -548,7 +588,8 @@ class AIEngine {
 
     // Additional validation: check if AI response is finance-related
     if (response != null && !_isFinancialAdvice(response)) {
-      debugPrint('🚫 AIEngine: AI returned non-financial response, replacing with rejection');
+      debugPrint(
+          '🚫 AIEngine: AI returned non-financial response, replacing with rejection');
       return FinanceQuestionValidator.getRejectionMessage();
     }
 
@@ -580,8 +621,8 @@ class AIEngine {
             .map((t) => (t['amount'] as num?)?.toDouble().abs() ?? 0)
             .toList();
         final avg = amounts.reduce((a, b) => a + b) / amounts.length;
-        final allSimilar = amounts.every(
-            (a) => (a - avg).abs() / (avg == 0 ? 1 : avg) < 0.1);
+        final allSimilar =
+            amounts.every((a) => (a - avg).abs() / (avg == 0 ? 1 : avg) < 0.1);
 
         if (allSimilar && avg > 0) {
           detected.add(DetectedSubscription(
@@ -685,26 +726,33 @@ class AIEngine {
     } catch (e) {
       final errorMsg = e.toString();
       debugPrint('AIEngine: Gemini API error: $e');
-      
+
       // Check for quota/rate limit errors
-      if (errorMsg.contains('quota') || 
+      if (errorMsg.contains('quota') ||
           errorMsg.contains('rate limit') ||
           errorMsg.contains('exceeded')) {
-        debugPrint('AIEngine: Quota/Rate limit exceeded. Please check your Gemini API plan.');
-        
+        debugPrint(
+            'AIEngine: Quota/Rate limit exceeded. Please check your Gemini API plan.');
+
         // Check if limit is 0 (free tier not enabled)
         if (errorMsg.contains('limit: 0')) {
-          debugPrint('AIEngine: CRITICAL - Free tier quota limit is 0. This means:');
-          debugPrint('AIEngine: 1. Free tier may not be enabled for your project');
-          debugPrint('AIEngine: 2. You may need to enable the Generative AI API in Google Cloud Console');
-          debugPrint('AIEngine: 3. Check quota settings at: https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas');
+          debugPrint(
+              'AIEngine: CRITICAL - Free tier quota limit is 0. This means:');
+          debugPrint(
+              'AIEngine: 1. Free tier may not be enabled for your project');
+          debugPrint(
+              'AIEngine: 2. You may need to enable the Generative AI API in Google Cloud Console');
+          debugPrint(
+              'AIEngine: 3. Check quota settings at: https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas');
         }
-        
+
         // Extract retry time if available
-        final retryMatch = RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
+        final retryMatch =
+            RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
         if (retryMatch != null) {
           final retrySeconds = double.tryParse(retryMatch.group(1) ?? '0') ?? 0;
-          debugPrint('AIEngine: Rate limit - retry after ${retrySeconds.toStringAsFixed(0)} seconds');
+          debugPrint(
+              'AIEngine: Rate limit - retry after ${retrySeconds.toStringAsFixed(0)} seconds');
         }
       }
     }
@@ -777,26 +825,33 @@ class AIEngine {
     } catch (e) {
       final errorMsg = e.toString();
       debugPrint('AIEngine: Gemini API error: $e');
-      
+
       // Check for quota/rate limit errors
-      if (errorMsg.contains('quota') || 
+      if (errorMsg.contains('quota') ||
           errorMsg.contains('rate limit') ||
           errorMsg.contains('exceeded')) {
-        debugPrint('AIEngine: Quota/Rate limit exceeded. Please check your Gemini API plan.');
-        
+        debugPrint(
+            'AIEngine: Quota/Rate limit exceeded. Please check your Gemini API plan.');
+
         // Check if limit is 0 (free tier not enabled)
         if (errorMsg.contains('limit: 0')) {
-          debugPrint('AIEngine: CRITICAL - Free tier quota limit is 0. This means:');
-          debugPrint('AIEngine: 1. Free tier may not be enabled for your project');
-          debugPrint('AIEngine: 2. You may need to enable the Generative AI API in Google Cloud Console');
-          debugPrint('AIEngine: 3. Check quota settings at: https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas');
+          debugPrint(
+              'AIEngine: CRITICAL - Free tier quota limit is 0. This means:');
+          debugPrint(
+              'AIEngine: 1. Free tier may not be enabled for your project');
+          debugPrint(
+              'AIEngine: 2. You may need to enable the Generative AI API in Google Cloud Console');
+          debugPrint(
+              'AIEngine: 3. Check quota settings at: https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas');
         }
-        
+
         // Extract retry time if available
-        final retryMatch = RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
+        final retryMatch =
+            RegExp(r'Please retry in ([\d.]+)s').firstMatch(errorMsg);
         if (retryMatch != null) {
           final retrySeconds = double.tryParse(retryMatch.group(1) ?? '0') ?? 0;
-          debugPrint('AIEngine: Rate limit - retry after ${retrySeconds.toStringAsFixed(0)} seconds');
+          debugPrint(
+              'AIEngine: Rate limit - retry after ${retrySeconds.toStringAsFixed(0)} seconds');
         }
       }
     }
